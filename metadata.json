@@ -1,0 +1,7 @@
+{
+  "name": "RadioToolBox",
+  "description": "An all-in-one digital assistant for radio hosts, podcasters, and content creators, featuring a customizable dashboard with AI-powered tools, a script timer with teleprompter, a soundboard, voice memo recorder, playlist manager, and a shareable professional profile.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
