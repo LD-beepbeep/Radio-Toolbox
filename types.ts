@@ -94,7 +94,7 @@ export interface TabSetting {
   isVisible: boolean;
 }
 
-export type SegmentType = 'Talk' | 'Music' | 'Ad Break' | 'Intro/Outro';
+export type SegmentType = 'Talk' | 'Music' | 'Ad Break' | 'Intro/Outro' | string;
 
 export interface Segment {
   id: string;
@@ -102,4 +102,6 @@ export interface Segment {
   title: string;
   duration: number; // in seconds
   script?: string;
+  songId?: string;
+  color?: string;
 }

@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect } from 'react';
 import { Tab, Theme, ProfileData } from './types';
 import Header from './components/Header';
@@ -261,7 +258,9 @@ const App: React.FC = () => {
       <main className="flex-grow w-full max-w-7xl mx-auto px-4 pt-24 pb-32">
         {renderContent()}
       </main>
-      <TabBar activeTab={getActiveTab()} onTabChange={navigateTab} />
+      {Object.values(Tab).includes(currentView as Tab) && (
+        <TabBar activeTab={getActiveTab()} onTabChange={navigateTab} />
+      )}
     </div>
   );
 };

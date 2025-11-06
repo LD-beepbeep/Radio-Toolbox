@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { ProfileData, Recording } from '../../types';
@@ -83,7 +81,7 @@ const generateProfileHTML = (profile: ProfileData): string => {
 };
 
 
-const DemoPlayer: React.FC<{ recording: Recording }> = ({ recording }) => {
+const DemoPlayer = React.memo<{ recording: Recording }>(({ recording }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -118,10 +116,10 @@ const DemoPlayer: React.FC<{ recording: Recording }> = ({ recording }) => {
             </div>
         </div>
     )
-}
+});
 
 // Dedicated layout for printing to achieve the CV look
-const PrintLayout: React.FC<{ profile: ProfileData }> = ({ profile }) => (
+const PrintLayout = React.memo<{ profile: ProfileData }>(({ profile }) => (
     <div id="printable-profile">
         <header className="print-header">
             <div className="info">
@@ -172,7 +170,7 @@ const PrintLayout: React.FC<{ profile: ProfileData }> = ({ profile }) => (
             )}
         </div>
     </div>
-);
+));
 
 
 const Profile: React.FC<ProfileProps> = ({ navigateTo }) => {
@@ -296,7 +294,7 @@ const Profile: React.FC<ProfileProps> = ({ navigateTo }) => {
             
             <PrintLayout profile={profile} />
 
-            <div className="space-y-8 no-print">
+            <div key={isEditing ? 'edit' : 'view'} className="space-y-8 no-print">
                 {/* Header */}
                  <div className="bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-5xl flex flex-col items-center text-center p-6 shadow-soft dark:shadow-none">
                     <div className="relative">

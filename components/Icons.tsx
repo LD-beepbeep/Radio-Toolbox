@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 
 // Generic Icon Props
@@ -139,7 +137,8 @@ export const PauseIcon = (props: IconProps) => (
 
 export const BroadcastIcon = (props: IconProps) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <path d="M3.4 11.2a1 1 0 0 0-1.8 1.6l1.5 1.7a1 1 0 0 0 1.6-1.8z"></path><path d="M22.4 12.8a1 1 0 0 0-1.6-1.8l-1.5 1.7a1 1 0 0 0 1.8 1.6z"></path><path d="M12 5a1 1 0 0 0-1 1v2a1 1 0 0 0 2 0V6a1 1 0 0 0-1-1z"></path><path d="M7.6 7.6a1 1 0 0 0-1.2 1.6l1.2 1.4a1 1 0 0 0 1.6-1.2z"></path><path d="M17.6 9.2a1 1 0 0 0-1.6-1.2l-1.2 1.4a1 1 0 0 0 1.2 1.6z"></path><path d="M12 12.5a4.5 4.5 0 0 0-4.5 4.5v.5a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-.5a4.5 4.5 0 0 0-4.5-4.5z"></path>
+        <circle cx="12" cy="12" r="2"></circle>
+        <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path>
     </svg>
 );
 
@@ -203,4 +202,8 @@ export const RefreshCwIcon = (props: IconProps) => (
 
 export const BarChartIcon = (props: IconProps) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>
+);
+
+export const PrinterIcon = (props: IconProps) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
 );
