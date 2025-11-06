@@ -57,10 +57,14 @@ const Header: React.FC<HeaderProps> = ({ theme, onToggleTheme, onToggleFlashligh
           </button>
           <button
             onClick={onProfileClick}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-light-accent-subtle dark:bg-dark-accent-subtle text-light-accent dark:text-dark-accent font-bold text-sm"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-light-accent-subtle dark:bg-dark-accent-subtle text-light-accent dark:text-dark-accent font-bold text-sm overflow-hidden"
             aria-label="Open Profile"
           >
-            {getInitials(profile.name)}
+            {profile.profilePictureUrl ? (
+                <img src={profile.profilePictureUrl} alt={profile.name} className="w-full h-full object-cover" />
+            ) : (
+                 getInitials(profile.name)
+            )}
           </button>
         </div>
       </div>

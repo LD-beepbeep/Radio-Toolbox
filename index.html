@@ -58,7 +58,22 @@
       }
     </script>
     <style>
+      @media screen {
+        #printable-profile {
+          display: none;
+        }
+      }
       @media print {
+        @page {
+          size: A4;
+          margin: 1.5cm;
+        }
+        body {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          background-color: #ffffff !important;
+          font-family: 'Inter', sans-serif !important;
+        }
         body * {
           visibility: hidden;
         }
@@ -70,9 +85,90 @@
           left: 0;
           top: 0;
           width: 100%;
+          color: #1C1C1E;
         }
         .no-print {
-          display: none;
+          display: none !important;
+        }
+        .print-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          border-bottom: 2px solid #E5E5EA;
+          padding-bottom: 1rem;
+        }
+        .print-header .info {
+          display: flex;
+          flex-direction: column;
+        }
+        .print-header h1 {
+          font-size: 2.5rem;
+          font-weight: 800;
+          margin: 0;
+        }
+        .print-header .title {
+          font-size: 1.25rem;
+          color: #0A84FF;
+          margin: 0;
+        }
+        .print-header .email {
+          font-size: 1rem;
+          color: #636366;
+          margin-top: 0.25rem;
+        }
+        .print-header .profile-pic {
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+        .print-section {
+          margin-top: 1.5rem;
+        }
+        .print-section-title {
+          font-size: 1rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #0A84FF;
+          border-bottom: 1px solid #E5E5EA;
+          padding-bottom: 0.25rem;
+          margin-bottom: 0.75rem;
+        }
+        .print-bio {
+          font-size: 0.9rem;
+          line-height: 1.6;
+        }
+        .print-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+        }
+        .print-list-item {
+          margin-bottom: 0.75rem;
+        }
+        .print-list-item h4 {
+          font-size: 1rem;
+          font-weight: 600;
+          margin: 0;
+        }
+        .print-list-item p {
+          font-size: 0.9rem;
+          color: #636366;
+          margin: 0;
+        }
+        .print-skills-container {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+        .print-skill-tag {
+          background-color: #D6E9FF;
+          color: #0A84FF;
+          padding: 0.25rem 0.75rem;
+          border-radius: 9999px;
+          font-size: 0.8rem;
+          font-weight: 500;
         }
       }
     </style>

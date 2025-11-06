@@ -7,6 +7,8 @@ export const initialProfile: ProfileData = {
     title: 'Host of "The Sonic Journey"',
     email: 'alex.ryder@radio.co',
     bio: 'Host of the award-winning "The Sonic Journey," Alex Ryder is a voice for the musically curious. With a passion for untold stories and underground sounds, Alex has been connecting artists and audiences for over a decade. Tune in for your daily dose of sonic discovery.',
+    profilePictureUrl: '',
+    featuredDemos: [],
     experience: [
         { id: 'exp1', role: 'Lead Host & Producer', company: 'WRDX 101.5 The Vibe', period: '2018 - Present' },
         { id: 'exp2', role: 'Weekend Host', company: 'KICK 97.9 FM', period: '2015 - 2018' },

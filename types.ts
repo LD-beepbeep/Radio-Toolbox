@@ -53,6 +53,8 @@ export interface ProfileData {
   title: string;
   email: string;
   bio: string;
+  profilePictureUrl?: string;
+  featuredDemos?: string[]; // array of recording IDs
   experience: {
     id: string;
     role: string;
