@@ -5,7 +5,7 @@ export enum Theme {
 
 export enum Tab {
   Dashboard = 'Dashboard',
-  PlaylistManager = 'Playlist',
+  Showtime = 'Showtime',
   VoiceMemo = 'Memos',
   Tools = 'Tools',
 }
@@ -18,7 +18,6 @@ export enum WidgetType {
   QuickLinks = 'Quick Links',
   PlaylistPreview = 'Up Next',
   RecentMemo = 'Recent Memo',
-  BroadcastHours = 'Broadcast Hours Log',
   OnAirStatus = 'On-Air Status',
 }
 
@@ -38,9 +37,15 @@ export interface Song {
 export interface Recording {
   id: string;
   name: string;
-  blob: Blob;
+  dataUrl: string;
   duration: number;
   createdAt: Date;
+}
+
+export interface Sound {
+  id: string;
+  name: string;
+  dataUrl: string;
 }
 
 export interface ProfileData {
@@ -48,7 +53,6 @@ export interface ProfileData {
   title: string;
   email: string;
   bio: string;
-  broadcastHours: number;
   experience: {
     id: string;
     role: string;
@@ -60,7 +64,7 @@ export interface ProfileData {
     name: string;
   }[];
   socialLinks: {
-    id: string;
+    id:string;
     platform: string;
     url: string;
   }[];
@@ -80,4 +84,20 @@ export interface Link {
   id: string;
   title: string;
   url: string;
+}
+
+export interface TabSetting {
+  id: Tab;
+  label: string;
+  isVisible: boolean;
+}
+
+export type SegmentType = 'Talk' | 'Music' | 'Ad Break' | 'Intro/Outro';
+
+export interface Segment {
+  id: string;
+  type: SegmentType;
+  title: string;
+  duration: number; // in seconds
+  script?: string;
 }

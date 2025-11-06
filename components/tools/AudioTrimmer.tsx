@@ -12,6 +12,9 @@ const AudioTrimmer: React.FC = () => {
     const waveformRef = useRef<HTMLCanvasElement>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
     const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+    
+    const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
+    const HANDLE_WIDTH = 10; // px
 
     const drawWaveform = useCallback((buffer: AudioBuffer) => {
         const canvas = waveformRef.current;
@@ -31,6 +34,7 @@ const AudioTrimmer: React.FC = () => {
         const isDarkMode = document.documentElement.classList.contains('dark');
         ctx.fillStyle = isDarkMode ? '#1C1C1E' : '#FFFFFF';
         ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+        ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
 
         ctx.lineWidth = 1;
         ctx.strokeStyle = isDarkMode ? '#505052' : '#C7C7CC';
@@ -60,9 +64,20 @@ const AudioTrimmer: React.FC = () => {
 
         const startX = (trimStart / audioBuffer.duration) * canvas.clientWidth;
         const endX = (trimEnd / audioBuffer.duration) * canvas.clientWidth;
+        const handleColor = '#0A84FF';
 
+        // Selection area
         ctx.fillStyle = 'rgba(10, 132, 255, 0.3)';
         ctx.fillRect(startX, 0, endX - startX, canvas.clientHeight);
+
+        // Start handle
+        ctx.fillStyle = handleColor;
+        ctx.fillRect(startX - (HANDLE_WIDTH/2), 0, HANDLE_WIDTH, canvas.clientHeight);
+        
+        // End handle
+        ctx.fillStyle = handleColor;
+        ctx.fillRect(endX - (HANDLE_WIDTH/2), 0, HANDLE_WIDTH, canvas.clientHeight);
+
 
     }, [audioBuffer, trimStart, trimEnd, drawWaveform]);
 
@@ -131,47 +146,28 @@ const AudioTrimmer: React.FC = () => {
             newBuffer.copyToChannel(audioBuffer.getChannelData(i).subarray(startSample, endSample), i);
         }
 
-        const writeString = (view: DataView, offset: number, string: string) => {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        };
-
         const bufferToWave = (abuffer: AudioBuffer) => {
             const numOfChan = abuffer.numberOfChannels;
             const length = abuffer.length * numOfChan * 2 + 44;
             const buffer = new ArrayBuffer(length);
             const view = new DataView(buffer);
-            const channels = [];
-            let i, sample;
-            let offset = 0;
             let pos = 0;
-            
-            writeString(view, pos, 'RIFF'); pos += 4;
-            view.setUint32(pos, length - 8, true); pos += 4;
-            writeString(view, pos, 'WAVE'); pos += 4;
-            writeString(view, pos, 'fmt '); pos += 4;
-            view.setUint32(pos, 16, true); pos += 4;
-            view.setUint16(pos, 1, true); pos += 2;
-            view.setUint16(pos, numOfChan, true); pos += 2;
-            view.setUint32(pos, abuffer.sampleRate, true); pos += 4;
-            view.setUint32(pos, abuffer.sampleRate * 4, true); pos += 4;
-            view.setUint16(pos, numOfChan * 2, true); pos += 2;
-            view.setUint16(pos, 16, true); pos += 2;
-            writeString(view, pos, 'data'); pos += 4;
+            const writeString = (s: string) => { for (let i = 0; i < s.length; i++) view.setUint8(pos + i, s.charCodeAt(i)); pos += s.length; };
+            writeString('RIFF'); view.setUint32(pos, length - 8, true); pos += 4; writeString('WAVE'); writeString('fmt '); pos += 4;
+            view.setUint32(pos, 16, true); pos += 4; view.setUint16(pos, 1, true); pos += 2; view.setUint16(pos, numOfChan, true); pos += 2;
+            view.setUint32(pos, abuffer.sampleRate, true); pos += 4; view.setUint32(pos, abuffer.sampleRate * 2 * numOfChan, true); pos += 4;
+            view.setUint16(pos, numOfChan * 2, true); pos += 2; view.setUint16(pos, 16, true); pos += 2; writeString('data'); pos += 4;
             view.setUint32(pos, length - pos - 4, true); pos += 4;
-
-            for (i = 0; i < abuffer.numberOfChannels; i++)
-                channels.push(abuffer.getChannelData(i));
-
+            const channels = Array.from({ length: abuffer.numberOfChannels }, (_, i) => abuffer.getChannelData(i));
+            let offset = 0;
             while (pos < length) {
-                for (i = 0; i < numOfChan; i++) {
-                    sample = Math.max(-1, Math.min(1, channels[i][offset]));
-                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+                for (let i = 0; i < numOfChan; i++) {
+                    let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
                     view.setInt16(pos, sample, true);
                     pos += 2;
                 }
-                offset++
+                offset++;
             }
             return new Blob([view], { type: 'audio/wav' });
         }
@@ -184,6 +180,52 @@ const AudioTrimmer: React.FC = () => {
         a.click();
         URL.revokeObjectURL(url);
     };
+
+    const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        if (!audioBuffer) return;
+        const canvas = waveformRef.current!;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        
+        const startX = (trimStart / audioBuffer.duration) * canvas.clientWidth;
+        const endX = (trimEnd / audioBuffer.duration) * canvas.clientWidth;
+
+        if (Math.abs(x - startX) < HANDLE_WIDTH) {
+            setDraggingHandle('start');
+        } else if (Math.abs(x - endX) < HANDLE_WIDTH) {
+            setDraggingHandle('end');
+        }
+    };
+    
+    const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+         if (!audioBuffer) return;
+         const canvas = waveformRef.current!;
+         const rect = canvas.getBoundingClientRect();
+         const x = e.clientX - rect.left;
+         
+         const startX = (trimStart / audioBuffer.duration) * canvas.clientWidth;
+         const endX = (trimEnd / audioBuffer.duration) * canvas.clientWidth;
+
+         if (Math.abs(x - startX) < HANDLE_WIDTH || Math.abs(x - endX) < HANDLE_WIDTH || draggingHandle) {
+             canvas.style.cursor = 'ew-resize';
+         } else {
+             canvas.style.cursor = 'default';
+         }
+
+        if (draggingHandle) {
+            const time = (x / canvas.clientWidth) * audioBuffer.duration;
+            if (draggingHandle === 'start') {
+                setTrimStart(Math.max(0, Math.min(time, trimEnd)));
+            } else {
+                setTrimEnd(Math.min(audioBuffer.duration, Math.max(time, trimStart)));
+            }
+        }
+    };
+
+    const handleMouseUp = () => {
+        setDraggingHandle(null);
+    };
+
 
     const formatTime = (seconds: number) => {
         const date = new Date(0);
@@ -204,16 +246,23 @@ const AudioTrimmer: React.FC = () => {
                     </div>
                 ) : (
                     <>
-                        <canvas ref={waveformRef} className="w-full h-32 bg-light-bg dark:bg-dark-bg rounded-lg cursor-ew-resize"></canvas>
-                        <div className="mt-4 space-y-2">
-                             <div>
-                                <label className="text-sm">Start: {formatTime(trimStart)}</label>
-                                <input type="range" min="0" max={audioBuffer.duration} value={trimStart} step="0.01" onChange={e => setTrimStart(Math.min(parseFloat(e.target.value), trimEnd))} className="w-full h-2 bg-light-primary dark:bg-dark-primary rounded-lg appearance-none cursor-pointer" />
-                            </div>
-                            <div>
-                                <label className="text-sm">End: {formatTime(trimEnd)}</label>
-                                <input type="range" min="0" max={audioBuffer.duration} value={trimEnd} step="0.01" onChange={e => setTrimEnd(Math.max(parseFloat(e.target.value), trimStart))} className="w-full h-2 bg-light-primary dark:bg-dark-primary rounded-lg appearance-none cursor-pointer" />
-                            </div>
+                        <canvas 
+                            ref={waveformRef} 
+                            className="w-full h-32 bg-light-bg dark:bg-dark-bg rounded-lg"
+                            onMouseDown={handleMouseDown}
+                            onMouseMove={handleMouseMove}
+                            onMouseUp={handleMouseUp}
+                            onMouseLeave={handleMouseUp}
+                        />
+                         <div className="mt-4 grid grid-cols-2 gap-4">
+                             <div className="text-center font-mono p-2 bg-light-bg dark:bg-dark-primary rounded-lg">
+                                <label className="text-xs">Start</label>
+                                <div className="text-lg font-semibold">{formatTime(trimStart)}</div>
+                             </div>
+                             <div className="text-center font-mono p-2 bg-light-bg dark:bg-dark-primary rounded-lg">
+                                <label className="text-xs">End</label>
+                                <div className="text-lg font-semibold">{formatTime(trimEnd)}</div>
+                             </div>
                         </div>
                         <div className="mt-4 flex justify-between items-center">
                             <div className="font-mono text-sm">Duration: {formatTime(trimEnd-trimStart)}</div>

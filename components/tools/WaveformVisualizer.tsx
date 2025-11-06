@@ -1,7 +1,10 @@
+
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { UploadIcon } from '../Icons';
 
 const WaveformVisualizer: React.FC = () => {
+    const [audioFile, setAudioFile] = useState<File | null>(null);
     const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -37,7 +40,6 @@ const WaveformVisualizer: React.FC = () => {
         ctx.lineWidth = 2;
         ctx.strokeStyle = color;
         ctx.beginPath();
-        let x = 0;
         for (let i = 0; i < width; i++) {
             let min = 1.0;
             let max = -1.0;
@@ -80,7 +82,7 @@ const WaveformVisualizer: React.FC = () => {
             ctx.fillRect(progressWidth - 1, 0, 2, height);
         }
 
-    }, [bgColor, progressColor]);
+    }, [bgColor, progressColor, waveColor]);
 
     // Effect to draw static preview when buffer or colors change
     useEffect(() => {
@@ -94,6 +96,7 @@ const WaveformVisualizer: React.FC = () => {
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            setAudioFile(file);
             setVideoUrl(null);
             const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
             const arrayBuffer = await file.arrayBuffer();
@@ -110,9 +113,25 @@ const WaveformVisualizer: React.FC = () => {
         setVideoUrl(null);
         setProgress(0);
 
+        // 1. Create Audio Stream
+        const audioContext = new AudioContext();
+        const sourceNode = audioContext.createBufferSource();
+        sourceNode.buffer = audioBuffer;
+        const dest = audioContext.createMediaStreamDestination();
+        sourceNode.connect(dest);
+        const audioTrack = dest.stream.getAudioTracks()[0];
+        sourceNode.start();
+
+        // 2. Create Video Stream from Canvas
         const canvas = canvasRef.current;
-        const stream = canvas.captureStream(30); // 30 FPS
-        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        const canvasStream = canvas.captureStream(30); // 30 FPS
+        const videoTrack = canvasStream.getVideoTracks()[0];
+
+        // 3. Combine Streams
+        const combinedStream = new MediaStream([videoTrack, audioTrack]);
+
+        // 4. Setup MediaRecorder
+        mediaRecorderRef.current = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
         
         recordedChunksRef.current = [];
         mediaRecorderRef.current.ondataavailable = (event) => {
@@ -124,6 +143,8 @@ const WaveformVisualizer: React.FC = () => {
             const url = URL.createObjectURL(blob);
             setVideoUrl(url);
             setIsGenerating(false);
+            sourceNode.stop();
+            audioContext.close();
         };
         
         mediaRecorderRef.current.start();
@@ -136,8 +157,8 @@ const WaveformVisualizer: React.FC = () => {
         if (!ctx) return;
         
         const renderFrame = () => {
-            if (frame > frameCount) {
-                mediaRecorderRef.current?.stop();
+            if (frame > frameCount || !mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') {
+                if(mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current?.stop();
                 return;
             }
             const progressPercent = frame / frameCount;
@@ -203,7 +224,7 @@ const WaveformVisualizer: React.FC = () => {
                             <div className="text-center space-y-2">
                                 <p className="font-bold">Generation Complete!</p>
                                 <video src={videoUrl} controls className="w-full rounded-lg"></video>
-                                <a href={videoUrl} download="waveform-video.webm" className="inline-block w-full py-3 bg-green-500 text-white font-bold rounded-lg">Download Video</a>
+                                <a href={videoUrl} download={`${audioFile?.name.replace(/\.[^/.]+$/, "")}-waveform.webm`} className="inline-block w-full py-3 bg-green-500 text-white font-bold rounded-lg">Download Video (with Audio)</a>
                             </div>
                         )}
                     </>

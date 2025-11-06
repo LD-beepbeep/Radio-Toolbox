@@ -1,8 +1,9 @@
 
+
 import React, { useState, useMemo, useRef } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { Song } from '../../types';
-import { TrashIcon, ChevronUpIcon, ChevronDownIcon, PlusIcon } from '../Icons';
+import { TrashIcon, PlusIcon, ShuffleIcon } from '../Icons';
 
 const PlaylistManager: React.FC = () => {
   const [songs, setSongs] = useLocalStorage<Song[]>('playlist', []);
@@ -58,6 +59,17 @@ const PlaylistManager: React.FC = () => {
     setSongs(songsCopy);
   }
 
+  const shufflePlaylist = () => {
+    setSongs(currentSongs => {
+      const shuffled = [...currentSongs];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    });
+  };
+
   const { totalTracks, totalRuntime } = useMemo(() => {
     const totalTracks = songs.length;
     const totalRuntime = songs.reduce((acc, song) => acc + song.duration, 0);
@@ -80,55 +92,57 @@ const PlaylistManager: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-col md:flex-row flex justify-between items-start mb-6">
+      <div className="flex-col md:flex-row flex justify-between items-start mb-4">
         <div>
-            <h2 className="text-3xl font-bold">Playlist</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{totalTracks} Tracks, {formatTime(totalRuntime)}</p>
+            <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">{totalTracks} Tracks, {formatTime(totalRuntime)}</p>
         </div>
-        <input type="text" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="mt-2 md:mt-0 bg-light-surface dark:bg-dark-surface rounded-lg px-3 py-1.5 text-sm focus:outline-none"/>
+         <div className="flex items-center space-x-2 mt-2 md:mt-0">
+            <input type="text" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-full px-4 py-2 text-sm focus:outline-none w-48 shadow-soft dark:shadow-none"/>
+            <button onClick={shufflePlaylist} className="p-2.5 rounded-full bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider shadow-soft dark:shadow-none" aria-label="Shuffle Playlist">
+                <ShuffleIcon className="w-5 h-5" />
+            </button>
+        </div>
       </div>
 
-      <div className="flex-grow overflow-y-auto">
+      <div className="flex-grow overflow-y-auto -mx-4 px-4">
         {songs.length > 0 ? (
-          <div className="bg-light-surface dark:bg-dark-surface rounded-xl">
-            <ul className="divide-y divide-light-primary dark:divide-dark-primary">
+          <div className="space-y-3">
               {filteredSongs.map((song, index) => (
-                <li 
+                <div 
                   key={song.id} 
-                  className="p-3 flex items-center justify-between cursor-grab"
+                  className="p-4 flex items-center justify-between cursor-grab bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-4xl shadow-soft dark:shadow-none"
                   draggable
-                  onDragStart={() => dragItem.current = index}
-                  onDragEnter={() => dragOverItem.current = index}
+                  onDragStart={() => dragItem.current = songs.findIndex(s => s.id === song.id)}
+                  onDragEnter={() => dragOverItem.current = songs.findIndex(s => s.id === song.id)}
                   onDragEnd={handleDragSort}
                   onDragOver={(e) => e.preventDefault()}
                 >
                   <div className="flex items-center">
-                      <span className="text-gray-400 mr-4 w-5 text-center font-medium">{index + 1}</span>
+                      <span className="text-light-text-secondary dark:text-dark-text-secondary mr-4 w-5 text-center font-medium">{index + 1}</span>
                       <div>
                           <p className="font-semibold">{song.title}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{song.artist} - {formatTime(song.duration)}</p>
+                          <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">{song.artist} - {formatTime(song.duration)}</p>
                       </div>
                   </div>
                   <div className="flex items-center space-x-0">
-                      <button onClick={() => removeSong(song.id)} className="p-2 rounded-full hover:bg-light-primary dark:hover:bg-dark-primary text-destructive">
+                      <button onClick={() => removeSong(song.id)} className="p-2 rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary text-destructive">
                           <TrashIcon className="w-5 h-5"/>
                       </button>
                   </div>
-                </li>
+                </div>
               ))}
-            </ul>
           </div>
         ) : (
-          <div className="text-center text-gray-500 dark:text-gray-400 mt-16">
-            <p>Your playlist is empty.</p>
-            <p>Add songs using the plus button below.</p>
+          <div className="text-center text-light-text-secondary dark:text-dark-text-secondary mt-16">
+            <p className="font-semibold">Your playlist is empty.</p>
+            <p className="text-sm">Tap the plus button to add a song.</p>
           </div>
         )}
       </div>
 
       <button 
         onClick={() => setShowAddModal(true)} 
-        className="fixed bottom-24 right-6 bg-light-accent dark:bg-dark-accent text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center z-40 hover:opacity-90 transition-opacity"
+        className="fixed bottom-24 right-6 bg-light-accent dark:bg-dark-accent text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center z-40 hover:opacity-90 transition-transform active:scale-95 md:bottom-6"
         aria-label="Add new song"
       >
         <PlusIcon className="w-8 h-8" />
@@ -136,15 +150,16 @@ const PlaylistManager: React.FC = () => {
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-            <div className="bg-light-surface dark:bg-dark-surface rounded-2xl p-4 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-                <h3 className="text-lg font-bold mb-4">Add New Song</h3>
+            <div className="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-5xl p-5 w-full max-w-md" onClick={e => e.stopPropagation()}>
+                <div className="w-12 h-1.5 bg-light-divider dark:bg-dark-divider rounded-full mx-auto mb-4"></div>
+                <h3 className="text-lg font-bold mb-4 text-center">Add New Song</h3>
                 <form onSubmit={handleAddSong} className="space-y-3">
-                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" required className="w-full bg-light-bg dark:bg-dark-primary rounded-lg p-3 text-sm focus:outline-none"/>
-                    <input type="text" value={artist} onChange={e => setArtist(e.target.value)} placeholder="Artist" required className="w-full bg-light-bg dark:bg-dark-primary rounded-lg p-3 text-sm focus:outline-none"/>
-                    <input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="Duration (sec)" required className="w-full bg-light-bg dark:bg-dark-primary rounded-lg p-3 text-sm focus:outline-none"/>
+                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" required className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm focus:outline-none"/>
+                    <input type="text" value={artist} onChange={e => setArtist(e.target.value)} placeholder="Artist" required className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm focus:outline-none"/>
+                    <input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="Duration (sec)" required className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm focus:outline-none"/>
                     <div className="flex justify-end space-x-2 pt-2">
-                        <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm font-semibold rounded-lg bg-light-primary dark:bg-dark-primary">Cancel</button>
-                        <button type="submit" className="px-4 py-2 text-sm font-semibold rounded-lg bg-light-accent dark:bg-dark-accent text-white">Add Song</button>
+                        <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2 text-sm font-semibold rounded-full bg-light-divider dark:bg-dark-divider">Cancel</button>
+                        <button type="submit" className="px-5 py-2 text-sm font-semibold rounded-full bg-light-accent dark:bg-dark-accent text-white">Add Song</button>
                     </div>
                 </form>
             </div>
