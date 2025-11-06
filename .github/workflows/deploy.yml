@@ -1,0 +1,31 @@
+name: Build and Deploy Vite Site
+
+on:
+  push:
+    branches:
+      - main  # change this if your branch is named "master"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get your code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install stuff
+        run: npm ci
+
+      - name: Build the site
+        run: npm run build
+
+      - name: Upload to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
