@@ -3,7 +3,7 @@ name: Build and Deploy Vite Site
 on:
   push:
     branches:
-      - main  # change this if your branch is named "master"
+      - main  # change this if your branch is called "master"
 
 jobs:
   deploy:
@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install stuff
+      - name: Install dependencies
         run: npm ci
 
       - name: Build the site
