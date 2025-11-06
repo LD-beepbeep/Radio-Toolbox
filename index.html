@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Radio ToolBox</title>
+    <title>RadioToolBox</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -59,7 +59,7 @@
     </script>
     <style>
       @media screen {
-        #printable-profile {
+        #printable-profile, #printable-show {
           display: none;
         }
       }
@@ -73,14 +73,16 @@
           print-color-adjust: exact !important;
           background-color: #ffffff !important;
           font-family: 'Inter', sans-serif !important;
+          color: #1C1C1E;
         }
         body * {
           visibility: hidden;
         }
-        #printable-profile, #printable-profile * {
+        #printable-profile, #printable-profile *,
+        #printable-show, #printable-show * {
           visibility: visible;
         }
-        #printable-profile {
+        #printable-profile, #printable-show {
           position: absolute;
           left: 0;
           top: 0;
@@ -170,6 +172,57 @@
           font-size: 0.8rem;
           font-weight: 500;
         }
+        /* Showtime Print Styles */
+        .print-show-header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .print-show-header h1 {
+            font-size: 24pt;
+            margin: 0;
+        }
+        .print-show-header p {
+            font-size: 12pt;
+            color: #555;
+            margin: 0;
+        }
+        .print-segment {
+            break-inside: avoid;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .print-segment-title {
+            font-size: 14pt;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .print-segment-type {
+            font-size: 10pt;
+            font-weight: normal;
+            text-transform: uppercase;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .print-segment-script {
+            margin-top: 10px;
+            font-size: 11pt;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            color: #333;
+        }
+        .print-segment-song {
+            margin-top: 10px;
+            font-size: 11pt;
+            font-style: italic;
+            color: #555;
+        }
       }
     </style>
 
@@ -183,7 +236,7 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/Radio-Toolbox/assets/index-hAXOIytI.js"></script>
+  <script type="module" crossorigin src="/assets/index-BDCzE4P1.js"></script>
 </head>
   <body class="bg-light-bg-primary dark:bg-dark-bg-primary text-light-text-primary dark:text-dark-text-primary transition-colors duration-300">
     <div id="root"></div>
