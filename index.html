@@ -1,0 +1,79 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RadioToolBox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              // New Apple-Inspired Light Theme
+              'light-bg': '#F2F2F7',
+              'light-surface': '#FFFFFF',
+              'light-primary': '#E5E5EA',
+              'light-secondary': '#C7C7CC',
+              'light-text': '#000000',
+              'light-accent': '#007AFF',
+              
+              // New Apple-Inspired Dark Theme
+              'dark-bg': '#000000',
+              'dark-surface': '#1C1C1E',
+              'dark-primary': '#2C2C2E',
+              'dark-secondary': '#505052',
+              'dark-text': '#FFFFFF',
+              'dark-accent': '#0A84FF',
+
+              'destructive': '#FF3B30',
+            },
+          }
+        }
+      }
+    </script>
+    <style>
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #printable-profile, #printable-profile * {
+          visibility: visible;
+        }
+        #printable-profile {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        .no-print {
+          display: none;
+        }
+      }
+    </style>
+
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+  }
+}
+</script>
+  <script type="module" crossorigin src="/Radio-Toolbox/assets/index-DaYiv3lu.js"></script>
+</head>
+  <body class="bg-light-bg dark:bg-dark-bg">
+    <div id="root"></div>
+  </body>
+</html>
