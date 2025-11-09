@@ -1,9 +1,11 @@
 
+
 import React, { useRef } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { TabSetting } from '../../types';
 import { initialTabSettings } from '../../data/initialData';
 import { RefreshCwIcon } from '../Icons';
+import { DATA_KEYS } from './ImportExport';
 
 interface SettingsProps {
     navigateTo: (view: string) => void;
@@ -24,11 +26,21 @@ const Settings: React.FC<SettingsProps> = ({ navigateTo }) => {
             alert("Dashboard has been reset. It will update on your next visit to the Dashboard tab.");
         }
     }
+
+    const clearAllData = () => {
+        if (window.confirm("Are you absolutely sure? This will delete ALL your profiles, settings, recordings, sounds, and show plans. This action is irreversible.")) {
+            DATA_KEYS.forEach(key => {
+                localStorage.removeItem(key);
+            });
+            alert("All application data has been cleared. The app will now reload.");
+            window.location.reload();
+        }
+    }
     
-    const Section: React.FC<{title: string; children: React.ReactNode}> = ({title, children}) => (
+    const Section: React.FC<{title: string; children: React.ReactNode; danger?: boolean}> = ({title, children, danger = false}) => (
         <div>
-            <h3 className="text-sm font-semibold mb-2 px-1 text-light-text-secondary dark:text-dark-text-secondary uppercase tracking-wider">{title}</h3>
-            <div className="bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-4xl overflow-hidden shadow-soft dark:shadow-none">
+            <h3 className={`text-sm font-semibold mb-2 px-1 uppercase tracking-wider ${danger ? 'text-destructive' : 'text-light-text-secondary dark:text-dark-text-secondary'}`}>{title}</h3>
+            <div className={`bg-light-surface dark:bg-dark-surface rounded-4xl overflow-hidden shadow-soft dark:shadow-none dark:border ${danger ? 'border-destructive/50' : 'dark:border-dark-divider'}`}>
                 {children}
             </div>
         </div>
@@ -59,6 +71,15 @@ const Settings: React.FC<SettingsProps> = ({ navigateTo }) => {
                             <RefreshCwIcon className="w-4 h-4" />
                             <span>Reset Dashboard to Default</span>
                          </button>
+                    </div>
+                </Section>
+                <Section title="Danger Zone" danger>
+                    <div className="p-4">
+                        <h4 className="font-semibold text-base mb-1">Clear All Data</h4>
+                        <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mb-3">This will permanently delete all your app data, including profiles, settings, recordings, sounds, and show plans. This action cannot be undone.</p>
+                        <button onClick={clearAllData} className="w-full text-sm text-white bg-destructive p-3 rounded-full font-semibold hover:opacity-90 transition-opacity">
+                            Clear All Application Data
+                        </button>
                     </div>
                 </Section>
             </div>

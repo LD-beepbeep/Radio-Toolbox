@@ -509,7 +509,7 @@ const Showtime: React.FC = () => {
                         if (!activeSegmentId) return;
                         setSegmentsForCurrentShow(prev => prev.map(s => 
                             s.id === activeSegmentId 
-                            ? { ...s, songId, duration, title: s.title || title }
+                            ? { ...s, songId, duration, title }
                             : s
                         ));
                     }} 

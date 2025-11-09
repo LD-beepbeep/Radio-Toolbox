@@ -52,6 +52,7 @@ export interface Sound {
   name: string;
   dataUrl: string;
   imageUrl?: string;
+  volume?: number; // From 0.0 to 1.0
 }
 
 export interface ProfileData {

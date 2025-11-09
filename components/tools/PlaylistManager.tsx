@@ -96,6 +96,15 @@ const PlaylistManager: React.FC = () => {
     });
   }, [songs, searchTerm, showFavorites]);
 
+  const songsWithTimings = useMemo(() => {
+    let runningTime = 0;
+    return filteredSongs.map(song => {
+        const startTime = runningTime;
+        runningTime += song.duration;
+        return { ...song, startTime };
+    });
+  }, [filteredSongs]);
+
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
@@ -127,7 +136,7 @@ const PlaylistManager: React.FC = () => {
       <div className="flex-grow overflow-y-auto -mx-4 px-4">
         {songs.length > 0 ? (
           <div className="space-y-3">
-              {filteredSongs.map((song, index) => (
+              {songsWithTimings.map((song, index) => (
                 <div 
                   key={song.id} 
                   className="p-4 flex items-center justify-between cursor-grab bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-4xl shadow-soft dark:shadow-none"
@@ -141,7 +150,10 @@ const PlaylistManager: React.FC = () => {
                       <span className="text-light-text-secondary dark:text-dark-text-secondary mr-4 w-5 text-center font-medium">{index + 1}</span>
                       <div>
                           <p className="font-semibold">{song.title}</p>
-                          <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">{song.artist} - {formatTime(song.duration)}</p>
+                          <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                            {song.artist} - {formatTime(song.duration)}
+                            <span className="text-light-accent dark:text-dark-accent ml-2">(starts at {formatTime(song.startTime)})</span>
+                          </p>
                       </div>
                   </div>
                   <div className="flex items-center space-x-0">

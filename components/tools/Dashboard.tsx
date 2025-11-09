@@ -27,7 +27,7 @@ export const ALL_WIDGETS: WidgetInfo[] = [
 
 const WidgetWrapper: React.FC<{ title: string; onRemove?: () => void; isEditing?: boolean; children: React.ReactNode; className?: string; draggableProps?: any }> = ({ title, onRemove, isEditing, children, className, draggableProps }) => (
   <div 
-    className={`bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full relative shadow-soft dark:shadow-none dark:border dark:border-dark-divider ${className} ${isEditing ? 'cursor-grab ring-2 ring-light-accent dark:ring-dark-accent' : ''}`}
+    className={`bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full relative shadow-soft dark:shadow-none dark:border dark:border-dark-divider transition-all ${className} ${isEditing ? 'cursor-grab ring-4 ring-offset-4 ring-offset-light-bg-primary dark:ring-offset-dark-bg-primary ring-light-accent dark:ring-dark-accent' : ''}`}
     {...draggableProps}
     >
     {isEditing && (

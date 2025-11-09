@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { UploadIcon, DownloadIcon, CheckCircleIcon } from '../Icons';
 
-const DATA_KEYS = [
+export const DATA_KEYS = [
     'schedule_widget_items', 'checklist_widget_items', 'checklist_widget_checked_ids',
     'guest_name', 'guest_topic', 'guest_notes', 'quick_links', 'on_air_status',
     'user_profile', 'playlist', 'voicememo_recordings', 'teleprompter_speed',

@@ -79,6 +79,7 @@ const SoundModal: React.FC<{
     onClose: () => void;
 }> = ({ sound, onSave, onClose }) => {
     const [name, setName] = useState('');
+    const [volume, setVolume] = useState(1);
     const [audioFile, setAudioFile] = useState<File | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
@@ -88,9 +89,11 @@ const SoundModal: React.FC<{
         if (sound) {
             setName(sound.name);
             setPreviewUrl(sound.imageUrl);
+            setVolume(sound.volume ?? 1);
         } else {
             setName('');
             setPreviewUrl(undefined);
+            setVolume(1);
         }
         setAudioFile(null);
         setImageFile(null);
@@ -110,7 +113,7 @@ const SoundModal: React.FC<{
             alert('Please provide a name and an audio file.');
             return;
         }
-        const soundToSave: Sound = sound ? { ...sound, name } : { id: Date.now().toString(), name, dataUrl: '' };
+        const soundToSave: Sound = sound ? { ...sound, name, volume } : { id: Date.now().toString(), name, dataUrl: '', volume };
         onSave(soundToSave, audioFile, imageFile);
     };
 
@@ -137,6 +140,10 @@ const SoundModal: React.FC<{
                             </div>
                             <input type="file" accept="image/*" onChange={handleImageChange} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-light-accent/10 dark:file:bg-dark-accent/10 file:text-light-accent dark:file:text-dark-accent hover:file:bg-light-accent/20 dark:hover:file:bg-dark-accent/20"/>
                         </div>
+                    </div>
+                    <div>
+                        <label className="text-sm font-semibold mb-1 block">Volume: {Math.round(volume * 100)}%</label>
+                        <input type="range" min="0" max="1" step="0.01" value={volume} onChange={e => setVolume(parseFloat(e.target.value))} className="w-full"/>
                     </div>
                     <div className="flex justify-end space-x-2 pt-2">
                         <button type="button" onClick={onClose} className="px-5 py-2 text-sm font-semibold rounded-full bg-light-divider dark:bg-dark-divider">Cancel</button>
@@ -184,6 +191,7 @@ const Soundboard: React.FC = () => {
             }
             
             const playAudio = (audio: HTMLAudioElement) => {
+                audio.volume = sound.volume ?? 1;
                 audio.play().catch(e => console.error("Error playing sound:", e));
                  audio.onended = () => {
                     setActiveSound(current => (current && current.id === sound.id ? null : current));
