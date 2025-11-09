@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Tab, Theme, ProfileData, SharedProfileData, Recording } from './types';
 import Header from './components/Header';
@@ -23,7 +25,6 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { initialProfile } from './data/initialData';
 import { ExternalLinkIcon, TrophyIcon, XIcon, PlayIcon, PauseIcon } from './components/Icons';
 import ImportExport from './components/tools/ImportExport';
-import AIBrainstorm from './components/tools/AIBrainstorm';
 
 
 const SharedDemoPlayer: React.FC<{ recording: Recording }> = ({ recording }) => {
@@ -57,7 +58,7 @@ const SharedDemoPlayer: React.FC<{ recording: Recording }> = ({ recording }) => 
             </button>
             <div className="truncate">
                 <p className="font-semibold text-sm truncate">{recording.name}</p>
-                <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">{new Date(recording.createdAt).toLocaleDateString()}</p>
+                <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">{new Date(recording.createdAt).toLocaleDateString('en-US')}</p>
             </div>
         </div>
     );
@@ -269,8 +270,6 @@ const App: React.FC = () => {
         return <ImportExport />;
       case 'ShowPosterMaker':
         return <ShowPosterMaker />;
-      case 'AIBrainstorm':
-        return <AIBrainstorm />;
       case Tab.Tools:
         return <Tools navigateTo={navigateTo} />;
       default:

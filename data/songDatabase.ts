@@ -12,6 +12,12 @@ export const songDatabase: Song[] = [
     { id: 'db_gnr_sweetchild', title: "Sweet Child o' Mine", artist: "Guns N' Roses", duration: 356 },
     { id: 'db_oasis_wonderwall', title: "Wonderwall", artist: "Oasis", duration: 258 },
     { id: 'db_rem_losing', title: "Losing My Religion", artist: "R.E.M.", duration: 268 },
+    { id: 'db_prince_purplerain', title: "Purple Rain", artist: "Prince", duration: 520 },
+    { id: 'db_bowie_heroes', title: "Heroes", artist: "David Bowie", duration: 371 },
+    { id: 'db_springsteen_born', title: "Born to Run", artist: "Bruce Springsteen", duration: 270 },
+    { id: 'db_fleetwood_dreams', title: "Dreams", artist: "Fleetwood Mac", duration: 257 },
+    { id: 'db_pinkfloyd_comfortably', title: "Comfortably Numb", artist: "Pink Floyd", duration: 382 },
+    { id: 'db_simon_bridge', title: "Bridge Over Troubled Water", artist: "Simon & Garfunkel", duration: 292 },
 
     // 80s Hits
     { id: 'db_aha_takeonme', title: "Take on Me", artist: "a-ha", duration: 225 },
@@ -19,13 +25,23 @@ export const songDatabase: Song[] = [
     { id: 'db_police_everybreath', title: "Every Breath You Take", artist: "The Police", duration: 253 },
     { id: 'db_journey_dontstop', title: "Don't Stop Believin'", artist: "Journey", duration: 250 },
     { id: 'db_u2_withorwithout', title: "With or Without You", artist: "U2", duration: 296 },
-
+    { id: 'db_madonna_likeaprayer', title: "Like a Prayer", artist: "Madonna", duration: 341 },
+    { id: 'db_cyndi_girls', title: "Girls Just Want to Have Fun", artist: "Cyndi Lauper", duration: 238 },
+    { id: 'db_bonjovi_livin', title: "Livin' On A Prayer", artist: "Bon Jovi", duration: 249 },
+    { id: 'db_rickastley_nevergonna', title: "Never Gonna Give You Up", artist: "Rick Astley", duration: 213 },
+    { id: 'db_eurythmics_sweetdreams', title: "Sweet Dreams (Are Made of This)", artist: "Eurythmics", duration: 216 },
+    
     // 90s & 00s Alternative
     { id: 'db_radiohead_creep', title: "Creep", artist: "Radiohead", duration: 238 },
     { id: 'db_foo_everlong', title: "Everlong", artist: "Foo Fighters", duration: 250 },
     { id: 'db_rhcp_underbridge', title: "Under the Bridge", artist: "Red Hot Chili Peppers", duration: 264 },
     { id: 'db_killers_mrbrightside', title: "Mr. Brightside", artist: "The Killers", duration: 222 },
     { id: 'db_stripes_sevennation', title: "Seven Nation Army", artist: "The White Stripes", duration: 231 },
+    { id: 'db_greenday_basketcase', title: "Basket Case", artist: "Green Day", duration: 181 },
+    { id: 'db_pearljam_alive', title: "Alive", artist: "Pearl Jam", duration: 341 },
+    { id: 'db_smashing_1979', title: "1979", artist: "The Smashing Pumpkins", duration: 265 },
+    { id: 'db_beck_loser', title: "Loser", artist: "Beck", duration: 235 },
+    { id: 'db_strokes_lastnite', title: "Last Nite", artist: "The Strokes", duration: 193 },
 
     // Hip Hop & R&B
     { id: 'db_biggie_juicy', title: "Juicy", artist: "The Notorious B.I.G.", duration: 302 },
@@ -33,6 +49,12 @@ export const songDatabase: Song[] = [
     { id: 'db_beyonce_crazyinlove', title: "Crazy in Love", artist: "Beyoncé ft. JAY-Z", duration: 236 },
     { id: 'db_outkast_msjackson', title: "Ms. Jackson", artist: "OutKast", duration: 270 },
     { id: 'db_weeknd_blindinglights', title: "Blinding Lights", artist: "The Weeknd", duration: 200 },
+    { id: 'db_kanye_stronger', title: "Stronger", artist: "Kanye West", duration: 311 },
+    { id: 'db_kendrick_humble', title: "HUMBLE.", artist: "Kendrick Lamar", duration: 177 },
+    { id: 'db_laurynhill_dowoop', title: "Doo Wop (That Thing)", artist: "Lauryn Hill", duration: 320 },
+    { id: 'db_tlc_nowaterfalls', title: "No Waterfalls", artist: "TLC", duration: 289 },
+    { id: 'db_drake_hotlinebling', title: "Hotline Bling", artist: "Drake", duration: 267 },
+    { id: 'db_rihanna_umbrella', title: "Umbrella", artist: "Rihanna ft. JAY-Z", duration: 275 },
     
     // Indie & Modern Rock
     { id: 'db_modest_floaton', title: "Float On", artist: "Modest Mouse", duration: 208 },
@@ -40,6 +62,11 @@ export const songDatabase: Song[] = [
     { id: 'db_gotye_somebody', title: "Somebody That I Used to Know", artist: "Gotye ft. Kimbra", duration: 244 },
     { id: 'db_arctic_doiwanna', title: "Do I Wanna Know?", artist: "Arctic Monkeys", duration: 272 },
     { id: 'db_franz_takemeout', title: "Take Me Out", artist: "Franz Ferdinand", duration: 237 },
+    { id: 'db_arcadefire_wakeup', title: "Wake Up", artist: "Arcade Fire", duration: 355 },
+    { id: 'db_florence_dogdays', title: "Dog Days Are Over", artist: "Florence + The Machine", duration: 252 },
+    { id: 'db_vampire_a-punk', title: "A-Punk", artist: "Vampire Weekend", duration: 137 },
+    { id: 'db_tameimpala_lessiknow', title: "The Less I Know The Better", artist: "Tame Impala", duration: 218 },
+    { id: 'db_fosterthepeople_pumpedup', title: "Pumped Up Kicks", artist: "Foster The People", duration: 239 },
 
     // Electronic & Dance
     { id: 'db_daft_onemoretime', title: "One More Time", artist: "Daft Punk", duration: 320 },
@@ -47,6 +74,10 @@ export const songDatabase: Song[] = [
     { id: 'db_daft_getlucky', title: "Get Lucky", artist: "Daft Punk ft. Pharrell Williams", duration: 369 },
     { id: 'db_guetta_titanium', title: "Titanium", artist: "David Guetta ft. Sia", duration: 245 },
     { id: 'db_deadmau5_strobe', title: "Strobe", artist: "deadmau5", duration: 637 },
+    { id: 'db_chemical_heyboy', title: "Hey Boy Hey Girl", artist: "The Chemical Brothers", duration: 291 },
+    { id: 'db_lcd_daftpunk', title: "Daft Punk Is Playing at My House", artist: "LCD Soundsystem", duration: 316 },
+    { id: 'db_disclosure_latch', title: "Latch", artist: "Disclosure ft. Sam Smith", duration: 255 },
+    { id: 'db_calvinharris_feelso', title: "Feel So Close", artist: "Calvin Harris", duration: 206 },
 
     // Soul & Funk
     { id: 'db_aretha_respect', title: "Respect", artist: "Aretha Franklin", duration: 157 },
@@ -54,6 +85,20 @@ export const songDatabase: Song[] = [
     { id: 'db_gloria_iwillsurvive', title: "I Will Survive", artist: "Gloria Gaynor", duration: 287 },
     { id: 'db_markron_uptownfunk', title: "Uptown Funk", artist: "Mark Ronson ft. Bruno Mars", duration: 270 },
     { id: 'db_amy_valerie', title: "Valerie", artist: "Amy Winehouse", duration: 233 },
+    { id: 'db_jamesbrown_getup', title: "Get Up (I Feel Like Being a) Sex Machine", artist: "James Brown", duration: 319 },
+    { id: 'db_billwithers_lovelyday', title: "Lovely Day", artist: "Bill Withers", duration: 255 },
+    { id: 'db_marvingaye_whatsgoingon', title: "What's Going On", artist: "Marvin Gaye", duration: 233 },
+    { id: 'db_earthwindfire_september', title: "September", artist: "Earth, Wind & Fire", duration: 215 },
+
+    // Country
+    { id: 'db_cash_ringoffire', title: "Ring of Fire", artist: "Johnny Cash", duration: 157 },
+    { id: 'db_parton_jolene', title: "Jolene", artist: "Dolly Parton", duration: 161 },
+    { id: 'db_hankwilliams_heygoodlookin', title: "Hey, Good Lookin'", artist: "Hank Williams", duration: 175 },
+    { id: 'db_carrie_beforehecheats', title: "Before He Cheats", artist: "Carrie Underwood", duration: 199 },
+    { id: 'db_shania_manifeel', title: "Man! I Feel Like A Woman!", artist: "Shania Twain", duration: 233 },
+    { id: 'db_johndenver_countryroads', title: "Take Me Home, Country Roads", artist: "John Denver", duration: 197 },
+    { id: 'db_garthbrooks_friends', title: "Friends in Low Places", artist: "Garth Brooks", duration: 258 },
+    { id: 'db_chrisstapleton_tennessee', title: "Tennessee Whiskey", artist: "Chris Stapleton", duration: 293 },
 
     // Recent Hits
     { id: 'db_harry_asitwas', title: "As It Was", artist: "Harry Styles", duration: 167 },
@@ -62,4 +107,20 @@ export const songDatabase: Song[] = [
     { id: 'db_olivia_good4u', title: "good 4 u", artist: "Olivia Rodrigo", duration: 178 },
     { id: 'db_harry_watermelon', title: "Watermelon Sugar", artist: "Harry Styles", duration: 174 },
     { id: 'db_dua_levitating', title: "Levitating", artist: "Dua Lipa", duration: 203 },
+    { id: 'db_lizzo_aboutdamntime', title: "About Damn Time", artist: "Lizzo", duration: 191 },
+    { id: 'db_miley_flowers', title: "Flowers", artist: "Miley Cyrus", duration: 200 },
+    { id: 'db_postmalone_circles', title: "Circles", artist: "Post Malone", duration: 215 },
+    { id: 'db_taylor_antihero', title: "Anti-Hero", artist: "Taylor Swift", duration: 200 },
+    { id: 'db_glassanimals_heatwaves', title: "Heat Waves", artist: "Glass Animals", duration: 238 },
+    { id: 'db_dojacat_sayso', title: "Say So", artist: "Doja Cat", duration: 237 },
+    { id: 'db_bts_dynamite', title: "Dynamite", artist: "BTS", duration: 199 },
+    { id: 'db_maneskin_beggin', title: "Beggin'", artist: "Måneskin", duration: 211 },
+
+    // Instrumental & Classical
+    { id: 'db_beethoven_fur_elise', title: "Für Elise", artist: "Ludwig van Beethoven", duration: 170 },
+    { id: 'db_mozart_eine_kleine', title: "Eine kleine Nachtmusik", artist: "Wolfgang Amadeus Mozart", duration: 356 },
+    { id: 'db_brubeck_takefive', title: "Take Five", artist: "Dave Brubeck Quartet", duration: 324 },
+    { id: 'db_enya_orinocoflow', title: "Orinoco Flow", artist: "Enya", duration: 266 },
+    { id: 'db_vivaldi_four_seasons', title: "The Four Seasons - Spring", artist: "Antonio Vivaldi", duration: 618 },
+    { id: 'db_pachelbel_canon_in_d', title: "Canon in D", artist: "Johann Pachelbel", duration: 300 },
 ];

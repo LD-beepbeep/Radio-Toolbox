@@ -1,9 +1,11 @@
 
 
+
+
 import React, { useState, useMemo, useRef } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { Song } from '../../types';
-import { TrashIcon, PlusIcon, ShuffleIcon, StarIcon } from '../Icons';
+import { TrashIcon, PlusIcon, ShuffleIcon, StarIcon, DownloadIcon, UploadIcon } from '../Icons';
 
 const PlaylistManager: React.FC = () => {
   const [songs, setSongs] = useLocalStorage<Song[]>('playlist', []);
@@ -16,6 +18,7 @@ const PlaylistManager: React.FC = () => {
   
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
+  const importSongsRef = useRef<HTMLInputElement>(null);
 
   const handleAddSong = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +83,51 @@ const PlaylistManager: React.FC = () => {
     });
   };
 
+  const handleExport = () => {
+    if (songs.length === 0) {
+        alert("Playlist is empty. Nothing to export.");
+        return;
+    }
+    const dataStr = JSON.stringify(songs, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.download = `playlist_backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!window.confirm("This will overwrite your current playlist. Are you sure?")) {
+          if(importSongsRef.current) importSongsRef.current.value = '';
+          return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          try {
+              const text = event.target?.result as string;
+              const importedSongs: Song[] = JSON.parse(text);
+              if (Array.isArray(importedSongs) && importedSongs.every(s => 'id' in s && 'title' in s && 'artist' in s && 'duration' in s)) {
+                  setSongs(importedSongs);
+                  alert("Playlist imported successfully!");
+              } else {
+                  throw new Error("Invalid file format");
+              }
+          } catch (err) {
+              alert("Failed to import playlist. Please check file format.");
+              console.error(err);
+          } finally {
+               if(importSongsRef.current) importSongsRef.current.value = '';
+          }
+      };
+      reader.readAsText(file);
+  };
+
   const { totalTracks, totalRuntime } = useMemo(() => {
     const totalTracks = songs.length;
     const totalRuntime = songs.reduce((acc, song) => acc + song.duration, 0);
@@ -114,6 +162,7 @@ const PlaylistManager: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
+      <input type="file" ref={importSongsRef} onChange={handleImport} accept=".json" className="hidden" />
       <div className="flex-col md:flex-row flex justify-between items-start mb-4">
         <div>
             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">{totalTracks} Tracks, {formatTime(totalRuntime)}</p>
@@ -129,6 +178,12 @@ const PlaylistManager: React.FC = () => {
             </button>
             <button onClick={shufflePlaylist} className="p-2.5 rounded-full bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider shadow-soft dark:shadow-none" aria-label="Shuffle Playlist">
                 <ShuffleIcon className="w-5 h-5" />
+            </button>
+            <button onClick={() => importSongsRef.current?.click()} className="p-2.5 rounded-full bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider shadow-soft dark:shadow-none" aria-label="Import Playlist">
+                <UploadIcon className="w-5 h-5" />
+            </button>
+            <button onClick={handleExport} className="p-2.5 rounded-full bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider shadow-soft dark:shadow-none" aria-label="Export Playlist">
+                <DownloadIcon className="w-5 h-5" />
             </button>
         </div>
       </div>

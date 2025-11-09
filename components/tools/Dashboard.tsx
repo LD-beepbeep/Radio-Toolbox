@@ -429,7 +429,7 @@ const Dashboard: React.FC = () => {
         setWidgets(widgetsCopy);
     };
 
-    const currentDate = new Date().toLocaleDateString(undefined, {
+    const currentDate = new Date().toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',

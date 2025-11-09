@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { Recording } from '../../types';
@@ -181,7 +182,7 @@ const VoiceMemo: React.FC = () => {
       reader.onloadend = () => {
           const base64data = reader.result as string;
           setNewRecordingData({ dataUrl: base64data, duration: recordingDuration });
-          setNewRecordingName(`Recording - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+          setNewRecordingName(`Recording - ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`);
           setIsSaving(true);
           audioChunks.current = [];
           setIsRecording(false);
@@ -295,7 +296,7 @@ const VoiceMemo: React.FC = () => {
                                     <input type="text" value={editingName} onChange={(e) => setEditingName(e.target.value)} onBlur={() => handleSaveName(rec.id)} onKeyDown={(e) => e.key === 'Enter' && handleSaveName(rec.id)} autoFocus onClick={e => e.stopPropagation()} className="font-medium bg-light-bg-secondary dark:bg-dark-bg-secondary rounded px-1 -mx-1"/>
                                 ) : (<p className="font-medium text-left truncate">{rec.name}</p>)}
                                 <div className="flex items-center space-x-2 text-sm text-light-text-secondary dark:text-dark-text-secondary text-left">
-                                    <span>{formatTime(rec.duration)} - {new Date(rec.createdAt).toLocaleDateString()}</span>
+                                    <span>{formatTime(rec.duration)} - {new Date(rec.createdAt).toLocaleDateString('en-US')}</span>
                                     {rec.location && <a href={`https://www.google.com/maps?q=${rec.location.latitude},${rec.location.longitude}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="flex items-center hover:text-light-accent dark:hover:text-dark-accent"><MapPinIcon className="w-4 h-4"/></a>}
                                 </div>
                             </div>

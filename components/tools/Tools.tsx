@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import { MicIcon, MusicIcon, ScissorsIcon, TargetIcon, FileTextIcon, ActivityIcon, NormalizeCompressIcon, WaveformVisualizerIcon, ShowPosterMakerIcon, BarChartIcon, DownloadIcon, Lightbulb } from '../Icons';
 
@@ -25,7 +26,6 @@ const ToolCard: React.FC<ToolCardProps> = ({ title, description, icon: Icon, onC
 
 const TOOLS_LIST = [
   { id: 'Soundboard', title: 'Soundboard', description: 'Upload & play sound clips.', icon: MusicIcon },
-  { id: 'AIBrainstorm', title: 'AI Brainstorm', description: 'Generate show ideas with AI.', icon: Lightbulb },
   { id: 'ShowPosterMaker', title: 'Show Poster Maker', description: 'Quick graphics for shows.', icon: ShowPosterMakerIcon },
   { id: 'MicTest', title: 'Mic Test', description: 'Check your microphone quality.', icon: MicIcon },
   { id: 'VoiceWarmup', title: 'Voice Warm-up', description: 'Guided voice exercises.', icon: ActivityIcon },

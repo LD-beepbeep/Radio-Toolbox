@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { Segment, SegmentType, Song, ProfileData } from '../../types';
@@ -673,8 +674,8 @@ const Showtime: React.FC = () => {
                                     onDragEnd={handleDragSort}
                                     onDragOver={(e) => e.preventDefault()}
                                     onClick={() => setActiveSegmentId(segment.id)}
-                                    className={`p-3 rounded-3xl flex items-center justify-between cursor-pointer transition-all ${isActive ? 'ring-2 bg-light-bg-primary dark:bg-dark-bg-secondary' : 'hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary'}`}
-                                    style={{ ringColor: segmentColor }}
+                                    className={`p-3 rounded-3xl flex items-center justify-between cursor-pointer transition-all border-2 ${isActive ? 'bg-light-bg-primary dark:bg-dark-bg-secondary' : 'border-transparent hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary'}`}
+                                    style={isActive ? { borderColor: segmentColor } : {}}
                                 >
                                     <div className="flex items-center min-w-0">
                                         <div className="w-3 h-3 rounded-full mr-3 flex-shrink-0" style={{backgroundColor: segmentColor}}></div>
