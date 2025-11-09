@@ -1,14 +1,13 @@
 
 import React from 'react';
 import { Theme, ProfileData } from '../types';
-import { Sun, Moon, Lightbulb, ChevronLeftIcon } from './Icons';
+import { Sun, Moon, ChevronLeftIcon } from './Icons';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { initialProfile } from '../data/initialData';
 
 interface HeaderProps {
   theme: Theme;
   onToggleTheme: () => void;
-  onToggleFlashlight: () => void;
   showBack: boolean;
   onBack: () => void;
   onSettingsClick: () => void;
@@ -20,7 +19,7 @@ const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
 }
 
-const Header: React.FC<HeaderProps> = ({ theme, onToggleTheme, onToggleFlashlight, showBack, onBack, onSettingsClick, onProfileClick, title }) => {
+const Header: React.FC<HeaderProps> = ({ theme, onToggleTheme, showBack, onBack, onSettingsClick, onProfileClick, title }) => {
   const [profile] = useLocalStorage<ProfileData>('user_profile', initialProfile);
 
   return (
@@ -47,13 +46,6 @@ const Header: React.FC<HeaderProps> = ({ theme, onToggleTheme, onToggleFlashligh
             aria-label="Toggle theme"
           >
             {theme === 'dark' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
-          </button>
-          <button
-            onClick={onToggleFlashlight}
-            className="w-10 h-10 flex items-center justify-center rounded-full text-light-text-secondary dark:text-dark-text-secondary hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-            aria-label="Toggle flashlight"
-          >
-            <Lightbulb className="w-6 h-6" />
           </button>
           <button
             onClick={onProfileClick}

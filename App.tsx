@@ -10,7 +10,6 @@ import Profile from './components/tools/Profile';
 import MicTest from './components/tools/MicTest';
 import Tools from './components/tools/Tools';
 import Soundboard from './components/tools/Soundboard';
-import StudioFlashlight from './components/tools/CallScreener';
 import VoiceWarmup from './components/tools/VoiceWarmup';
 import AudioTrimmer from './components/tools/AudioTrimmer';
 import MicDistanceHelper from './components/tools/MicDistanceHelper';
@@ -167,8 +166,6 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>(() => {
     return (localStorage.getItem('theme') as Theme) || Theme.Dark;
   });
-  const [isFlashlightOn, setIsFlashlightOn] = useState(false);
-  const [flashlightColor, setFlashlightColor] = useState('#FFFFFF');
   
   useEffect(() => {
       const hasOnboarded = localStorage.getItem('has_onboarded');
@@ -212,10 +209,6 @@ const App: React.FC = () => {
   const toggleTheme = () => {
     setTheme(prevTheme => (prevTheme === Theme.Dark ? Theme.Light : Theme.Dark));
   };
-
-  const toggleFlashlight = () => {
-    setIsFlashlightOn(prevState => !prevState);
-  };
   
   const navigateTo = (view: string) => {
     setViewStack(prev => [...prev, view]);
@@ -249,8 +242,6 @@ const App: React.FC = () => {
     switch (currentView) {
       case Tab.Dashboard:
         return <Dashboard />;
-      case 'StudioFlashlight':
-        return <StudioFlashlight isOn={isFlashlightOn} onToggle={toggleFlashlight} color={flashlightColor} setColor={setFlashlightColor} />;
       case 'AudioTrimmer':
         return <AudioTrimmer />;
       case 'MicDistanceHelper':
@@ -293,13 +284,9 @@ const App: React.FC = () => {
   return (
     <div className="font-sans min-h-screen flex flex-col">
        {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
-       {isFlashlightOn && (
-        <div className="fixed inset-0 z-[100]" style={{ backgroundColor: flashlightColor }}></div>
-      )}
       <Header 
         theme={theme} 
         onToggleTheme={toggleTheme} 
-        onToggleFlashlight={toggleFlashlight}
         showBack={viewStack.length > 1}
         onBack={goBack}
         onSettingsClick={() => navigateTo('Settings')}

@@ -1,9 +1,11 @@
 
+
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { Segment, SegmentType, Song, ProfileData } from '../../types';
-import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, MusicIcon, XIcon, ScriptIcon, PrinterIcon, CalendarDaysIcon } from '../Icons';
+import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, MusicIcon, XIcon, ScriptIcon, PrinterIcon, CalendarDaysIcon, SearchIcon } from '../Icons';
 import { initialShowsData, initialProfile } from '../../data/initialData';
+import { songDatabase } from '../../data/songDatabase';
 
 // --- UTILITIES & CONSTANTS ---
 const PREDEFINED_SEGMENT_TYPES: SegmentType[] = ['Talk', 'Music', 'Ad Break', 'Intro/Outro'];
@@ -25,6 +27,7 @@ const formatTime = (seconds: number, forceHours = false) => {
 
 const PrintableShow: React.FC<{ segments: Segment[], songs: Song[], showName: string }> = ({ segments, songs, showName }) => {
     const totalRuntime = segments.reduce((acc, s) => acc + s.duration, 0);
+    const allSongs = [...songs, ...songDatabase];
     return (
     <div id="printable-show">
         <div className="print-show-header">
@@ -32,7 +35,7 @@ const PrintableShow: React.FC<{ segments: Segment[], songs: Song[], showName: st
             <p>Total Runtime: {formatTime(totalRuntime, true)}</p>
         </div>
         {segments.map((segment, index) => {
-            const song = segment.songId ? songs.find(s => s.id === segment.songId) : null;
+            const song = segment.songId ? allSongs.find(s => s.id === segment.songId) : null;
             const segmentColor = segment.color || SEGMENT_COLORS[segment.type] || '#6b7280';
             return (
                 <div key={segment.id} className="print-segment">
@@ -133,110 +136,148 @@ const TalkSegmentView: React.FC<{ segment: Segment; onOpenTeleprompter: () => vo
     </div>
 );
 
+const SongBrowser: React.FC<{
+  onSelect: (song: Song) => void;
+  localSongs: Song[];
+  setLocalSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  usedSongIds: Set<string | undefined>;
+}> = ({ onSelect, localSongs, setLocalSongs, usedSongIds }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newArtist, setNewArtist] = useState('');
+  const [newDuration, setNewDuration] = useState('');
+
+  const handleAddSong = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newTitle && newArtist && newDuration) {
+      const newSong: Song = {
+        id: `local_${Date.now()}`,
+        title: newTitle,
+        artist: newArtist,
+        duration: parseInt(newDuration, 10),
+      };
+      setLocalSongs(prev => [newSong, ...prev]);
+      setNewTitle('');
+      setNewArtist('');
+      setNewDuration('');
+      setShowAddForm(false);
+    }
+  };
+  
+  const filteredDiscoverSongs = songDatabase.filter(s => 
+    s.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    s.artist.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredLocalSongs = localSongs.filter(s => 
+    s.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    s.artist.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const SongListItem: React.FC<{ song: Song, isUsed: boolean }> = ({ song, isUsed }) => (
+    <button
+      onClick={() => onSelect(song)}
+      disabled={isUsed}
+      className={`w-full text-left p-3 flex items-center justify-between rounded-3xl transition-colors ${isUsed ? 'bg-light-surface/50 dark:bg-dark-surface/50 opacity-50 cursor-not-allowed' : 'bg-light-bg-primary dark:bg-dark-bg-secondary hover:bg-light-accent-subtle dark:hover:bg-dark-accent-subtle'}`}
+    >
+      <div>
+        <p className="font-semibold text-sm">{song.title}</p>
+        <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">{song.artist}</p>
+      </div>
+      <span className="text-xs font-mono">{formatTime(song.duration)}</span>
+    </button>
+  );
+
+  return (
+    <div className="flex flex-col h-full w-full">
+      <h3 className="text-xl font-bold text-center mb-4 flex-shrink-0">Select a Song</h3>
+      <div className="relative mb-4 flex-shrink-0">
+        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary"/>
+        <input 
+          type="text" 
+          placeholder="Search for a song..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-full pl-10 pr-4 py-2 text-sm border border-light-divider dark:border-dark-divider"
+        />
+      </div>
+
+      <div className="flex-grow overflow-y-auto space-y-4 -mx-2 px-2">
+        {filteredLocalSongs.length > 0 && (
+          <div>
+            <h4 className="font-semibold text-sm mb-2 px-2 text-light-text-secondary dark:text-dark-text-secondary">Your Library</h4>
+            <div className="space-y-2">
+              {filteredLocalSongs.map(song => <SongListItem key={song.id} song={song} isUsed={usedSongIds.has(song.id)} />)}
+            </div>
+          </div>
+        )}
+        {filteredDiscoverSongs.length > 0 && (
+           <div>
+            <h4 className="font-semibold text-sm mb-2 px-2 text-light-text-secondary dark:text-dark-text-secondary">Discover</h4>
+            <div className="space-y-2">
+              {filteredDiscoverSongs.map(song => <SongListItem key={song.id} song={song} isUsed={usedSongIds.has(song.id)} />)}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div className="pt-4 mt-auto border-t border-light-divider dark:border-dark-divider flex-shrink-0">
+        {showAddForm ? (
+            <form onSubmit={handleAddSong} className="space-y-2">
+                <p className="text-sm font-semibold text-center">Add New Song</p>
+                <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Title" required className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
+                <input type="text" value={newArtist} onChange={e => setNewArtist(e.target.value)} placeholder="Artist" required className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
+                <input type="number" value={newDuration} onChange={e => setNewDuration(e.target.value)} placeholder="Duration (sec)" required className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
+                <div className="flex space-x-2">
+                     <button type="button" onClick={() => setShowAddForm(false)} className="w-full py-2 text-sm rounded-full bg-light-divider dark:bg-dark-divider">Cancel</button>
+                     <button type="submit" className="w-full py-2 text-sm rounded-full bg-light-accent text-white">Add</button>
+                </div>
+            </form>
+        ) : (
+            <button onClick={() => setShowAddForm(true)} className="w-full text-sm text-light-accent dark:text-dark-accent p-2 flex items-center justify-center rounded-xl hover:bg-light-accent/10 dark:hover:bg-dark-accent/10">
+                <PlusIcon className="w-4 h-4 mr-1" /> Can't find a song? Add it to your library.
+            </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 
 const MusicSegmentView: React.FC<{ 
     segment: Segment; 
-    onSelectSongClick: () => void;
-    songs: Song[];
-}> = ({ segment, onSelectSongClick, songs }) => {
-    const song = songs.find(s => s.id === segment.songId);
+    onSongUpdate: (songId: string | undefined, title: string, duration: number) => void;
+    localSongs: Song[];
+    setLocalSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+    allSongs: Song[];
+    usedSongIds: Set<string|undefined>;
+}> = ({ segment, onSongUpdate, localSongs, setLocalSongs, allSongs, usedSongIds }) => {
+    const [isSelectingSong, setIsSelectingSong] = useState(!segment.songId);
+    const song = allSongs.find(s => s.id === segment.songId);
+
+    const handleSelect = (selectedSong: Song) => {
+        onSongUpdate(selectedSong.id, selectedSong.title, selectedSong.duration);
+        setIsSelectingSong(false);
+    }
+    
+    const handleChangeSong = () => {
+        setIsSelectingSong(true);
+    }
 
     return (
-        <div className="bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full items-center justify-center text-center shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
-            {song ? (
-                <div className="flex flex-col items-center">
+        <div className="bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
+            {song && !isSelectingSong ? (
+                <div className="flex flex-col items-center justify-center text-center flex-grow">
                     <MusicIcon className="w-16 h-16 text-light-text-secondary dark:text-dark-text-secondary mb-4" />
                     <h3 className="text-3xl font-bold">{song.title}</h3>
                     <p className="text-xl text-light-text-secondary dark:text-dark-text-secondary">{song.artist}</p>
                     <p className="text-6xl font-mono mt-4">{formatTime(song.duration)}</p>
-                    <button onClick={onSelectSongClick} className="mt-6 px-4 py-2 text-sm font-semibold rounded-full bg-light-bg-primary dark:bg-dark-bg-secondary hover:bg-light-divider dark:hover:bg-dark-divider">Change Song</button>
+                    <button onClick={handleChangeSong} className="mt-6 px-4 py-2 text-sm font-semibold rounded-full bg-light-bg-primary dark:bg-dark-bg-secondary hover:bg-light-divider dark:hover:bg-dark-divider">Change Song</button>
                 </div>
             ) : (
-                <div>
-                    <MusicIcon className="w-16 h-16 text-light-text-secondary dark:text-dark-text-secondary mb-4" />
-                    <p className="text-light-text-secondary dark:text-dark-text-secondary mb-4">No song selected for this segment.</p>
-                    <button onClick={onSelectSongClick} className="px-5 py-3 text-base font-semibold rounded-full bg-light-accent dark:bg-dark-accent text-white">
-                        Select a Song
-                    </button>
-                </div>
+                <SongBrowser onSelect={handleSelect} localSongs={localSongs} setLocalSongs={setLocalSongs} usedSongIds={usedSongIds} />
             )}
-        </div>
-    );
-};
-
-const SongPickerModal: React.FC<{
-    songs: Song[];
-    setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
-    segments: Segment[];
-    onClose: () => void;
-    onSelect: (song: Song) => void;
-}> = ({ songs, setSongs, segments, onClose, onSelect }) => {
-    const usedSongIds = useMemo(() => new Set(segments.map(s => s.songId).filter(Boolean)), [segments]);
-    const [isAdding, setIsAdding] = useState(false);
-    const [title, setTitle] = useState('');
-    const [artist, setArtist] = useState('');
-    const [duration, setDuration] = useState('');
-
-    const handleAddSong = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (title && artist && duration) {
-            const newSong: Song = {
-                id: Date.now().toString(),
-                title, artist,
-                duration: parseInt(duration, 10)
-            };
-            setSongs(prev => [...prev, newSong]);
-            setTitle(''); setArtist(''); setDuration('');
-            setIsAdding(false);
-        }
-    };
-    
-    return (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-light-bg-primary dark:bg-dark-bg-secondary rounded-6xl p-5 w-full max-w-lg h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="w-12 h-1.5 bg-light-divider dark:bg-dark-divider rounded-full mx-auto mb-4 flex-shrink-0"></div>
-                <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                    <h3 className="text-xl font-bold text-center flex-grow">Select a Song</h3>
-                    <button onClick={() => setIsAdding(!isAdding)} className={`flex items-center text-sm font-semibold p-2 rounded-full transition-colors ${isAdding ? 'bg-light-accent-subtle text-light-accent' : 'text-light-text-secondary hover:text-light-accent'}`}>
-                       <PlusIcon className={`w-5 h-5 transition-transform duration-300 ${isAdding ? 'rotate-45' : ''}`}/>
-                    </button>
-                </div>
-
-                {isAdding && (
-                     <form onSubmit={handleAddSong} className="space-y-3 p-4 mb-4 bg-light-surface dark:bg-dark-surface rounded-4xl flex-shrink-0">
-                        <h4 className="font-semibold text-center">Add New Song</h4>
-                        <div className="flex space-x-2">
-                            <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" required className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-2xl p-3 text-sm"/>
-                            <input type="text" value={artist} onChange={e => setArtist(e.target.value)} placeholder="Artist" required className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-2xl p-3 text-sm"/>
-                        </div>
-                        <input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="Duration (sec)" required className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-2xl p-3 text-sm"/>
-                        <button type="submit" className="w-full px-5 py-2 text-sm font-semibold rounded-full bg-light-accent dark:bg-dark-accent text-white">Add Song</button>
-                    </form>
-                )}
-                
-                <div className="flex-grow overflow-y-auto space-y-2">
-                    {songs.map((song, index) => {
-                        const isUsed = usedSongIds.has(song.id);
-                        return (
-                            <button 
-                                key={song.id}
-                                disabled={isUsed}
-                                onClick={() => onSelect(song)}
-                                className={`w-full text-left p-3 flex items-center justify-between rounded-3xl transition-colors ${isUsed ? 'bg-light-surface/50 dark:bg-dark-surface/50 opacity-50 cursor-not-allowed' : 'bg-light-surface dark:bg-dark-surface hover:bg-light-accent-subtle dark:hover:bg-dark-accent-subtle'}`}
-                            >
-                                <div className="flex items-center">
-                                    <span className="text-light-text-secondary dark:text-dark-text-secondary mr-3 w-5 text-center font-medium">{index + 1}</span>
-                                    <div>
-                                        <p className="font-semibold text-sm">{song.title}</p>
-                                        <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">{song.artist}</p>
-                                    </div>
-                                </div>
-                                <span className="text-xs font-mono">{formatTime(song.duration)}</span>
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
         </div>
     );
 };
@@ -368,13 +409,12 @@ const EditScheduleModal: React.FC<{
 const Showtime: React.FC = () => {
     const [profile, setProfile] = useLocalStorage<ProfileData>('user_profile', initialProfile);
     const [showsData, setShowsData] = useLocalStorage<Record<string, Segment[]>>('shows_data', initialShowsData);
-    const [songs, setSongs] = useLocalStorage<Song[]>('playlist', []);
+    const [localSongs, setLocalSongs] = useLocalStorage<Song[]>('playlist', []);
     const [selectedShowId, setSelectedShowId] = useState<string | null>(profile.weeklySchedule[0]?.id || null);
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
 
     const [editingSegment, setEditingSegment] = useState<Segment | null>(null);
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-    const [showSongPicker, setShowSongPicker] = useState(false);
     const [isTeleprompterOpen, setIsTeleprompterOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -432,16 +472,6 @@ const Showtime: React.FC = () => {
         setSegmentsForCurrentShow(prev => prev.map(s => s.id === activeSegmentId ? { ...s, script: newScript } : s));
     };
     
-    const handleSongSelected = (song: Song) => {
-        if (!activeSegmentId) return;
-        setSegmentsForCurrentShow(prev => prev.map(s => 
-            s.id === activeSegmentId 
-            ? { ...s, songId: song.id, title: song.title, duration: song.duration }
-            : s
-        ));
-        setShowSongPicker(false);
-    };
-
     const handleAddNew = () => setEditingSegment({ id: Date.now().toString(), title: '', type: 'Talk', duration: 300 });
 
     const handleDragSort = () => {
@@ -457,14 +487,30 @@ const Showtime: React.FC = () => {
     const renderContextView = () => {
         if (!selectedShowId) return <div className="bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full items-center justify-center text-center shadow-soft dark:shadow-none dark:border dark:border-dark-divider"><p className="text-light-text-secondary dark:text-dark-text-secondary">Select a show to get started.</p></div>;
         if (!activeSegment) return <div className="bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full items-center justify-center text-center shadow-soft dark:shadow-none dark:border dark:border-dark-divider"><p className="text-light-text-secondary dark:text-dark-text-secondary">This show has no segments. Click 'Add Segment' to begin.</p></div>;
+        
         switch (activeSegment.type) {
             case 'Talk':
             case 'Intro/Outro':
                 return <TalkSegmentView segment={activeSegment} onOpenTeleprompter={() => setIsTeleprompterOpen(true)} onScriptChange={handleScriptChange} />;
             case 'Music':
-                return <MusicSegmentView segment={activeSegment} onSelectSongClick={() => setShowSongPicker(true)} songs={songs} />;
+                const allSongs = [...localSongs, ...songDatabase];
+                const usedSongIds = new Set(segments.map(s => s.songId).filter(Boolean));
+                return <MusicSegmentView 
+                    segment={activeSegment} 
+                    onSongUpdate={(songId, title, duration) => {
+                        if (!activeSegmentId) return;
+                        setSegmentsForCurrentShow(prev => prev.map(s => 
+                            s.id === activeSegmentId 
+                            ? { ...s, songId, title, duration }
+                            : s
+                        ));
+                    }} 
+                    localSongs={localSongs} 
+                    setLocalSongs={setLocalSongs}
+                    allSongs={allSongs}
+                    usedSongIds={usedSongIds}
+                />;
             case 'Ad Break':
-                return <PlaceholderView segment={activeSegment} />;
             default:
                 return <PlaceholderView segment={activeSegment} />;
         }
@@ -548,7 +594,7 @@ const Showtime: React.FC = () => {
                 </div>
             </div>
 
-            {selectedShow && <PrintableShow segments={segments} songs={songs} showName={selectedShow.show} />}
+            {selectedShow && <PrintableShow segments={segments} songs={localSongs} showName={selectedShow.show} />}
             
             <EditScheduleModal
                 isOpen={isScheduleModalOpen}
@@ -569,16 +615,6 @@ const Showtime: React.FC = () => {
                  />
             )}
             
-            {showSongPicker && activeSegment?.type === 'Music' && (
-                <SongPickerModal 
-                    songs={songs}
-                    setSongs={setSongs}
-                    segments={segments}
-                    onClose={() => setShowSongPicker(false)}
-                    onSelect={handleSongSelected}
-                />
-            )}
-
             {isTeleprompterOpen && activeSegment && (activeSegment.type === 'Talk' || activeSegment.type === 'Intro/Outro') && (
                 <TeleprompterModal
                     segment={activeSegment}

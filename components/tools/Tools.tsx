@@ -1,7 +1,7 @@
 
 
 import React from 'react';
-import { MicIcon, MusicIcon, Lightbulb, ScissorsIcon, TargetIcon, FileTextIcon, ActivityIcon, NormalizeCompressIcon, WaveformVisualizerIcon, ShowPosterMakerIcon, BarChartIcon, DownloadIcon } from '../Icons';
+import { MicIcon, MusicIcon, ScissorsIcon, TargetIcon, FileTextIcon, ActivityIcon, NormalizeCompressIcon, WaveformVisualizerIcon, ShowPosterMakerIcon, BarChartIcon, DownloadIcon } from '../Icons';
 
 interface ToolCardProps {
   title: string;
@@ -33,7 +33,6 @@ const TOOLS_LIST = [
   { id: 'AudioTrimmer', title: 'Audio Trimmer', description: 'Quickly trim audio clips.', icon: ScissorsIcon },
   { id: 'NormalizeCompress', title: 'Normalize & Compress', description: 'Simple audio processing.', icon: NormalizeCompressIcon },
   { id: 'WaveformVisualizer', title: 'Waveform Visualizer', description: 'Create animated waveforms.', icon: WaveformVisualizerIcon },
-  { id: 'StudioFlashlight', title: 'Studio Flashlight', description: 'A bright, full-screen light.', icon: Lightbulb },
   { id: 'ImportExport', title: 'Import / Export Data', description: 'Backup or restore your app data.', icon: DownloadIcon },
 ];
 
