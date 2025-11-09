@@ -265,7 +265,7 @@ const VoiceMemo: React.FC = () => {
         <button
             onClick={isRecording ? stopRecording : startRecording}
             disabled={!permission}
-            className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${isRecording ? 'bg-destructive' : 'bg-light-accent dark:bg-dark-accent'} disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${isRecording ? 'bg-destructive animate-pulse-red' : 'bg-light-accent dark:bg-dark-accent'} disabled:opacity-50 disabled:cursor-not-allowed`}
         >
             <div className={`w-8 h-8 transition-all duration-300 ${isRecording ? 'bg-white rounded-md' : 'bg-white rounded-full'}`}></div>
         </button>

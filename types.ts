@@ -53,6 +53,7 @@ export interface Sound {
   dataUrl: string;
   imageUrl?: string;
   volume?: number; // From 0.0 to 1.0
+  loop?: boolean;
 }
 
 export interface ProfileData {

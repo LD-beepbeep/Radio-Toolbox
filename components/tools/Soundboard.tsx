@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { Sound } from '../../types';
-import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, ImageIcon, EditIcon, ListIcon, GridIcon } from '../Icons';
+import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, ImageIcon, EditIcon, ListIcon, GridIcon, RefreshCwIcon } from '../Icons';
 
 const SoundCard: React.FC<{
     sound: Sound;
@@ -36,8 +36,9 @@ const SoundCard: React.FC<{
                     </div>
                 )}
             </button>
-            <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2 text-white text-xs font-semibold truncate backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                {sound.name}
+            <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2 text-white text-xs font-semibold truncate backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex justify-between items-center">
+                <span>{sound.name}</span>
+                {sound.loop && <RefreshCwIcon className="w-3 h-3 flex-shrink-0" />}
             </div>
             <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={onImageUpload} className="w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80"><ImageIcon className="w-3 h-3" /></button>
@@ -61,8 +62,9 @@ const SoundListItem: React.FC<{
             <button onClick={onPlay} className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-light-accent dark:bg-dark-accent text-white mr-4">
                 {isPlaying ? <PauseIcon className="w-6 h-6"/> : <PlayIcon className="w-6 h-6"/>}
             </button>
-            <div className="flex-grow truncate">
+            <div className="flex-grow truncate flex items-center space-x-2">
                 <p className="font-semibold">{sound.name}</p>
+                {sound.loop && <RefreshCwIcon className="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary flex-shrink-0" />}
             </div>
             <div className="flex items-center space-x-1">
                 <button onClick={onEdit} className="p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary"><EditIcon className="w-5 h-5"/></button>
@@ -80,6 +82,7 @@ const SoundModal: React.FC<{
 }> = ({ sound, onSave, onClose }) => {
     const [name, setName] = useState('');
     const [volume, setVolume] = useState(1);
+    const [loop, setLoop] = useState(false);
     const [audioFile, setAudioFile] = useState<File | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
@@ -90,10 +93,12 @@ const SoundModal: React.FC<{
             setName(sound.name);
             setPreviewUrl(sound.imageUrl);
             setVolume(sound.volume ?? 1);
+            setLoop(sound.loop ?? false);
         } else {
             setName('');
             setPreviewUrl(undefined);
             setVolume(1);
+            setLoop(false);
         }
         setAudioFile(null);
         setImageFile(null);
@@ -113,7 +118,7 @@ const SoundModal: React.FC<{
             alert('Please provide a name and an audio file.');
             return;
         }
-        const soundToSave: Sound = sound ? { ...sound, name, volume } : { id: Date.now().toString(), name, dataUrl: '', volume };
+        const soundToSave: Sound = sound ? { ...sound, name, volume, loop } : { id: Date.now().toString(), name, dataUrl: '', volume, loop };
         onSave(soundToSave, audioFile, imageFile);
     };
 
@@ -144,6 +149,12 @@ const SoundModal: React.FC<{
                     <div>
                         <label className="text-sm font-semibold mb-1 block">Volume: {Math.round(volume * 100)}%</label>
                         <input type="range" min="0" max="1" step="0.01" value={volume} onChange={e => setVolume(parseFloat(e.target.value))} className="w-full"/>
+                    </div>
+                     <div>
+                        <label className="flex items-center cursor-pointer">
+                            <input type="checkbox" checked={loop} onChange={e => setLoop(e.target.checked)} className="h-5 w-5 rounded-md border-gray-300 text-light-accent focus:ring-light-accent" />
+                            <span className="ml-2 text-sm font-semibold">Loop Audio</span>
+                        </label>
                     </div>
                     <div className="flex justify-end space-x-2 pt-2">
                         <button type="button" onClick={onClose} className="px-5 py-2 text-sm font-semibold rounded-full bg-light-divider dark:bg-dark-divider">Cancel</button>
@@ -192,9 +203,12 @@ const Soundboard: React.FC = () => {
             
             const playAudio = (audio: HTMLAudioElement) => {
                 audio.volume = sound.volume ?? 1;
+                audio.loop = sound.loop ?? false;
                 audio.play().catch(e => console.error("Error playing sound:", e));
                  audio.onended = () => {
-                    setActiveSound(current => (current && current.id === sound.id ? null : current));
+                    if (!audio.loop) {
+                        setActiveSound(current => (current && current.id === sound.id ? null : current));
+                    }
                 };
             }
             

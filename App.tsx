@@ -23,6 +23,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { initialProfile } from './data/initialData';
 import { ExternalLinkIcon, TrophyIcon, XIcon, PlayIcon, PauseIcon } from './components/Icons';
 import ImportExport from './components/tools/ImportExport';
+import AIBrainstorm from './components/tools/AIBrainstorm';
 
 
 const SharedDemoPlayer: React.FC<{ recording: Recording }> = ({ recording }) => {
@@ -268,6 +269,8 @@ const App: React.FC = () => {
         return <ImportExport />;
       case 'ShowPosterMaker':
         return <ShowPosterMaker />;
+      case 'AIBrainstorm':
+        return <AIBrainstorm />;
       case Tab.Tools:
         return <Tools navigateTo={navigateTo} />;
       default:

@@ -27,7 +27,7 @@ export const ALL_WIDGETS: WidgetInfo[] = [
 
 const WidgetWrapper: React.FC<{ title: string; onRemove?: () => void; isEditing?: boolean; children: React.ReactNode; className?: string; draggableProps?: any }> = ({ title, onRemove, isEditing, children, className, draggableProps }) => (
   <div 
-    className={`bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full relative shadow-soft dark:shadow-none dark:border dark:border-dark-divider transition-all ${className} ${isEditing ? 'cursor-grab ring-4 ring-offset-4 ring-offset-light-bg-primary dark:ring-offset-dark-bg-primary ring-light-accent dark:ring-dark-accent' : ''}`}
+    className={`bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full relative shadow-soft dark:shadow-none dark:border dark:border-dark-divider transition-all ${className} ${isEditing ? 'cursor-grab outline outline-4 outline-offset-2 outline-light-accent dark:outline-dark-accent' : ''}`}
     {...draggableProps}
     >
     {isEditing && (
@@ -429,17 +429,24 @@ const Dashboard: React.FC = () => {
         setWidgets(widgetsCopy);
     };
 
+    const currentDate = new Date().toLocaleDateString(undefined, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
     return (
         <div className="relative">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h2 className="text-lg text-light-text-secondary dark:text-dark-text-secondary">Welcome back,</h2>
-                    <p className="text-4xl font-bold tracking-tight">{profile.name.split(' ')[0]}</p>
+                    <h2 className="text-4xl font-bold tracking-tight">Welcome back, {profile.name.split(' ')[0]}</h2>
+                    <p className="text-md text-light-text-secondary dark:text-dark-text-secondary">{currentDate}</p>
                 </div>
-                <button onClick={() => setIsEditing(!isEditing)} className="px-5 py-2 text-sm font-semibold rounded-full bg-light-surface dark:bg-dark-surface hover:opacity-90 transition-opacity shadow-soft dark:shadow-none dark:border dark:border-dark-divider">{isEditing ? 'Done' : 'Edit'}</button>
+                <button onClick={() => setIsEditing(!isEditing)} className="px-5 py-2 text-sm font-semibold rounded-full bg-light-surface dark:bg-dark-surface hover:opacity-90 transition-opacity shadow-soft dark:shadow-none dark:border dark:border-dark-divider">{isEditing ? 'Done' : 'Edit Layout'}</button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {widgets.map((widget, index) => {
                     const Component = WIDGET_COMPONENTS[widget.type];
                     const draggableProps = isEditing ? {

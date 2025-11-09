@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Theme, ProfileData } from '../types';
 import { Sun, Moon, ChevronLeftIcon } from './Icons';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -21,6 +21,12 @@ const getInitials = (name: string) => {
 
 const Header: React.FC<HeaderProps> = ({ theme, onToggleTheme, showBack, onBack, onSettingsClick, onProfileClick, title }) => {
   const [profile] = useLocalStorage<ProfileData>('user_profile', initialProfile);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timerId = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timerId);
+  }, []);
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-light-bg-primary/80 dark:bg-dark-bg-primary/80 backdrop-blur-lg z-50 border-b border-light-divider dark:border-dark-divider">
@@ -33,10 +39,13 @@ const Header: React.FC<HeaderProps> = ({ theme, onToggleTheme, showBack, onBack,
         ) : <div className="w-10"></div> }
         </div>
 
-        <div className="flex-1 flex justify-center items-center">
-            <h1 className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">
+        <div className="flex-1 flex justify-center items-center gap-4">
+            <h1 className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary hidden sm:block">
                 {title}
             </h1>
+            <div className="font-mono text-xl font-semibold bg-light-surface dark:bg-dark-surface px-4 py-2 rounded-full shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
+              {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+            </div>
         </div>
 
         <div className="flex-1 flex justify-end items-center space-x-1">
