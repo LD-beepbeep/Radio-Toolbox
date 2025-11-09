@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
-    base: '/your-repo-name/', // 👈 add this line
+    base: '/Radio-Toolbox/', // 👈 add this line
 
     server: {
       port: 3000,
