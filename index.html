@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Radio ToolBox</title>
+    <title>RadioToolBox</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -58,6 +58,13 @@
       }
     </script>
     <style>
+      @keyframes pulse-red {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        50% { box-shadow: 0 0 0 1rem rgba(239, 68, 68, 0); }
+      }
+      .animate-pulse-red {
+        animation: pulse-red 2s infinite;
+      }
       @media screen {
         #printable-profile, #printable-show {
           display: none;
@@ -236,7 +243,7 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/Radio-Toolbox/assets/index-BDCzE4P1.js"></script>
+  <script type="module" crossorigin src="/assets/index-CPUJo73Y.js"></script>
 </head>
   <body class="bg-light-bg-primary dark:bg-dark-bg-primary text-light-text-primary dark:text-dark-text-primary transition-colors duration-300">
     <div id="root"></div>
