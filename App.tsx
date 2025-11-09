@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Tab, Theme, ProfileData, SharedProfileData, Recording } from './types';
 import Header from './components/Header';
@@ -21,7 +22,6 @@ import Onboarding from './components/Onboarding';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { initialProfile } from './data/initialData';
 import { ExternalLinkIcon, TrophyIcon, XIcon, PlayIcon, PauseIcon } from './components/Icons';
-import DbMeter from './components/tools/DbMeter';
 import ImportExport from './components/tools/ImportExport';
 
 
@@ -264,8 +264,6 @@ const App: React.FC = () => {
         return <NormalizeCompress />;
       case 'WaveformVisualizer':
         return <WaveformVisualizer />;
-      case 'DbMeter':
-        return <DbMeter />;
       case 'ImportExport':
         return <ImportExport />;
       case 'ShowPosterMaker':

@@ -32,6 +32,7 @@ export interface Song {
   title: string;
   artist: string;
   duration: number; // in seconds
+  isFavorite?: boolean;
 }
 
 export interface Recording {

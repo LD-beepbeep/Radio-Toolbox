@@ -1,301 +1,322 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+
+
+import React, { useState, useRef, useEffect } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { Sound } from '../../types';
-import { PlusIcon, TrashIcon, XIcon, MusicIcon, DownloadIcon, GridIcon, ListIcon, ImageIcon, SearchIcon } from '../Icons';
+import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, ImageIcon, EditIcon, ListIcon, GridIcon } from '../Icons';
 
-// A new sub-component for each sound for better organization
-const SoundItem: React.FC<{
+const SoundCard: React.FC<{
     sound: Sound;
-    viewMode: 'grid' | 'list';
-    isEditing: boolean;
     onPlay: () => void;
-    onRemove: () => void;
-    onAddImage: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}> = ({ sound, viewMode, isEditing, onPlay, onRemove, onAddImage }) => {
-    const imageInputRef = useRef<HTMLInputElement>(null);
+    onEdit: () => void;
+    onDelete: () => void;
+    onImageUpload: () => void;
+    gridSize: 'small' | 'medium' | 'large';
+    isActive: boolean;
+    isPlaying: boolean;
+}> = ({ sound, onPlay, onEdit, onDelete, onImageUpload, gridSize, isActive, isPlaying }) => {
 
-    const downloadSound = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        const a = document.createElement('a');
-        a.href = sound.dataUrl;
-        const fileExtension = sound.dataUrl.split(';')[0].split('/')[1] || 'audio';
-        a.download = `${sound.name}.${fileExtension}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    };
+    const sizeClasses = {
+        small: 'w-24 h-24',
+        medium: 'w-32 h-32',
+        large: 'w-40 h-40',
+    }[gridSize];
 
-    if (viewMode === 'grid') {
-        return (
-            <div className="relative group">
-                <button
-                    onClick={onPlay}
-                    className="w-full aspect-square bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-4xl flex items-center justify-center text-center p-2 shadow-soft transition-transform active:scale-95 hover:bg-light-bg-primary dark:hover:bg-dark-surface/80 overflow-hidden relative"
-                    disabled={isEditing}
-                    style={{
-                        backgroundImage: sound.imageUrl ? `url(${sound.imageUrl})` : 'none',
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center'
-                    }}
-                >
-                    {!sound.imageUrl ? (
-                         <span className="font-semibold text-sm break-all">{sound.name}</span>
-                    ) : (
-                        <div className="absolute inset-0 bg-black/40 flex items-end p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                             <span className="font-semibold text-sm text-white break-all">{sound.name}</span>
-                        </div>
-                    )}
-                </button>
-                {isEditing && (
-                    <>
-                        <button onClick={onRemove} className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 z-10 hover:opacity-90 transition-opacity">
-                            <XIcon className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => imageInputRef.current?.click()} className="absolute -top-2 -left-2 bg-light-accent text-white rounded-full p-1 z-10 hover:opacity-90 transition-opacity">
-                            <ImageIcon className="w-4 h-4" />
-                            <input type="file" ref={imageInputRef} onChange={onAddImage} accept="image/*" className="hidden" />
-                        </button>
-                    </>
-                )}
-            </div>
-        );
-    }
-
-    // List View
     return (
-         <div className="relative group flex items-center p-3 bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-3xl shadow-soft">
-            <button
-                onClick={onPlay}
-                disabled={isEditing}
-                className="flex items-center space-x-3 flex-grow text-left min-w-0"
-            >
-                <div 
-                    className="w-12 h-12 rounded-2xl bg-light-bg-primary dark:bg-dark-bg-secondary flex-shrink-0 flex items-center justify-center overflow-hidden"
-                    style={{
-                         backgroundImage: sound.imageUrl ? `url(${sound.imageUrl})` : 'none',
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center'
-                    }}
-                >
-                    {!sound.imageUrl && <MusicIcon className="w-6 h-6 text-light-text-secondary"/>}
-                </div>
-                <p className="font-semibold text-sm break-all flex-grow truncate">{sound.name}</p>
+        <div className={`relative group rounded-4xl overflow-hidden shadow-soft dark:shadow-none transition-all ${sizeClasses} ${isActive ? 'ring-2 ring-light-accent dark:ring-dark-accent' : ''}`}>
+            <button onClick={onPlay} className="w-full h-full bg-light-surface dark:bg-dark-surface flex items-center justify-center relative">
+                {sound.imageUrl ? (
+                    <img src={sound.imageUrl} alt={sound.name} className="w-full h-full object-cover" />
+                ) : (
+                    <span className="text-xl font-bold text-light-accent dark:text-dark-accent p-2 text-center">{sound.name}</span>
+                )}
+                 {isActive && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
+                        {isPlaying ? <PauseIcon className="w-12 h-12 text-white drop-shadow-lg"/> : <PlayIcon className="w-12 h-12 text-white drop-shadow-lg"/>}
+                    </div>
+                )}
             </button>
-             <div className="flex items-center flex-shrink-0 ml-2">
-                {!isEditing && (
-                    <button onClick={downloadSound} className="p-2 rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary text-light-text-secondary dark:text-dark-text-secondary">
-                        <DownloadIcon className="w-5 h-5" />
-                    </button>
-                )}
-                {isEditing && (
-                     <>
-                        <button onClick={() => imageInputRef.current?.click()} className="p-2 rounded-full hover:bg-light-accent/10 text-light-accent">
-                           <ImageIcon className="w-5 h-5" />
-                           <input type="file" ref={imageInputRef} onChange={onAddImage} accept="image/*" className="hidden" />
-                       </button>
-                        <button onClick={onRemove} className="p-2 rounded-full hover:bg-destructive/10 text-destructive">
-                            <TrashIcon className="w-5 h-5" />
-                        </button>
-                    </>
-                )}
+            <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2 text-white text-xs font-semibold truncate backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                {sound.name}
+            </div>
+            <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={onImageUpload} className="w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80"><ImageIcon className="w-3 h-3" /></button>
+                <button onClick={onEdit} className="w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80"><EditIcon className="w-3 h-3" /></button>
+                <button onClick={onDelete} className="w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80"><TrashIcon className="w-3 h-3" /></button>
+            </div>
+        </div>
+    );
+};
+
+const SoundListItem: React.FC<{
+    sound: Sound;
+    onPlay: () => void;
+    onEdit: () => void;
+    onDelete: () => void;
+    isActive: boolean;
+    isPlaying: boolean;
+}> = ({ sound, onPlay, onEdit, onDelete, isActive, isPlaying }) => {
+    return (
+        <div className={`flex items-center p-3 dark:border dark:border-dark-divider rounded-3xl shadow-soft dark:shadow-none transition-colors ${isActive ? 'bg-light-accent-subtle dark:bg-dark-accent-subtle' : 'bg-light-surface dark:bg-dark-surface'}`}>
+            <button onClick={onPlay} className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-light-accent dark:bg-dark-accent text-white mr-4">
+                {isPlaying ? <PauseIcon className="w-6 h-6"/> : <PlayIcon className="w-6 h-6"/>}
+            </button>
+            <div className="flex-grow truncate">
+                <p className="font-semibold">{sound.name}</p>
+            </div>
+            <div className="flex items-center space-x-1">
+                <button onClick={onEdit} className="p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary"><EditIcon className="w-5 h-5"/></button>
+                <button onClick={onDelete} className="p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary text-destructive"><TrashIcon className="w-5 h-5"/></button>
             </div>
         </div>
     );
 };
 
 
-const Soundboard: React.FC = () => {
-    const [sounds, setSounds] = useLocalStorage<Sound[]>('soundboard_sounds', []);
-    const [isEditing, setIsEditing] = useState(false);
-    const [showAddModal, setShowAddModal] = useState(false);
-    
-    const [searchTerm, setSearchTerm] = useState('');
-    const [viewMode, setViewMode] = useLocalStorage<'grid' | 'list'>('soundboard_view_mode', 'grid');
-    const [gridSize, setGridSize] = useLocalStorage<number>('soundboard_grid_size', 4);
-
-    const [newSoundName, setNewSoundName] = useState('');
-    const [newSoundFile, setNewSoundFile] = useState<File | null>(null);
-
-    const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
+const SoundModal: React.FC<{
+    sound: Sound | null;
+    onSave: (sound: Sound, audioFile: File | null, imageFile: File | null) => void;
+    onClose: () => void;
+}> = ({ sound, onSave, onClose }) => {
+    const [name, setName] = useState('');
+    const [audioFile, setAudioFile] = useState<File | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
+    const isEditing = sound !== null;
 
     useEffect(() => {
-        const refs = audioRefs.current;
-        return () => {
-            // Stop all sounds on unmount
-            refs.forEach(audio => {
-                audio.pause();
-                audio.currentTime = 0;
-            });
-        };
-    }, []);
-
-    const filteredSounds = useMemo(() => {
-        if (!searchTerm) return sounds;
-        return sounds.filter(sound => sound.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    }, [sounds, searchTerm]);
-
-    const playSound = (sound: Sound) => {
-        if (isEditing) return;
-        
-        let audio = audioRefs.current.get(sound.id);
-        if (audio) {
-            audio.currentTime = 0;
-            audio.play().catch(e => console.error("Audio play failed:", e));
+        if (sound) {
+            setName(sound.name);
+            setPreviewUrl(sound.imageUrl);
         } else {
-            const newAudio = new Audio(sound.dataUrl);
-            audioRefs.current.set(sound.id, newAudio);
-            newAudio.play().catch(e => console.error("Audio play failed:", e));
+            setName('');
+            setPreviewUrl(undefined);
+        }
+        setAudioFile(null);
+        setImageFile(null);
+    }, [sound]);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setImageFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
         }
     };
-
-    const handleAddImage = (soundId: string) => async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            const imageUrl = reader.result as string;
-            setSounds(prev => prev.map(s => s.id === soundId ? { ...s, imageUrl } : s));
-        };
-        reader.readAsDataURL(file);
-    };
-
-    const handleAddSound = async () => {
-        if (!newSoundName || !newSoundFile) return;
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            const dataUrl = reader.result as string;
-            const newSound: Sound = {
-                id: Date.now().toString(),
-                name: newSoundName,
-                dataUrl,
-            };
-            setSounds(prev => [...prev, newSound]);
-            setShowAddModal(false);
-            setNewSoundName('');
-            setNewSoundFile(null);
-        };
-        reader.readAsDataURL(newSoundFile);
-    };
-
-    const removeSound = (id: string) => {
-        setSounds(prev => prev.filter(s => s.id !== id));
-    };
     
-    const handleExportSounds = () => {
-        const dataStr = JSON.stringify(sounds, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = "soundboard_export.json";
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
+    const handleSave = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!name || (!isEditing && !audioFile)) {
+            alert('Please provide a name and an audio file.');
+            return;
+        }
+        const soundToSave: Sound = sound ? { ...sound, name } : { id: Date.now().toString(), name, dataUrl: '' };
+        onSave(soundToSave, audioFile, imageFile);
     };
 
     return (
-        <div>
-            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                <div className="relative w-full md:w-auto">
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary"/>
-                    <input 
-                        type="text"
-                        placeholder="Search sounds..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full md:w-64 bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-full pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-light-accent shadow-soft dark:shadow-none"
-                    />
-                </div>
-                
-                <div className="flex items-center gap-2 p-1 bg-light-surface dark:bg-dark-surface rounded-full shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
-                    <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full ${viewMode === 'grid' ? 'bg-light-accent-subtle dark:bg-dark-accent-subtle' : ''}`}><GridIcon className="w-5 h-5"/></button>
-                    <button onClick={() => setViewMode('list')} className={`p-2 rounded-full ${viewMode === 'list' ? 'bg-light-accent-subtle dark:bg-dark-accent-subtle' : ''}`}><ListIcon className="w-5 h-5"/></button>
-                </div>
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-5xl p-5 w-full max-w-md" onClick={e => e.stopPropagation()}>
+                <div className="w-12 h-1.5 bg-light-divider dark:bg-dark-divider rounded-full mx-auto mb-4"></div>
+                <h3 className="text-lg font-bold mb-4 text-center">{isEditing ? 'Edit Sound' : 'Add Sound'}</h3>
+                <form onSubmit={handleSave} className="space-y-4">
+                    <div>
+                        <label className="text-sm font-semibold mb-1 block">Sound Name</label>
+                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm focus:outline-none"/>
+                    </div>
+                    <div>
+                        <label className="text-sm font-semibold mb-1 block">Audio File</label>
+                        <input type="file" accept="audio/*" onChange={e => setAudioFile(e.target.files?.[0] || null)} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-light-accent/10 dark:file:bg-dark-accent/10 file:text-light-accent dark:file:text-dark-accent hover:file:bg-light-accent/20 dark:hover:file:bg-dark-accent/20"/>
+                        {isEditing && <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">Leave blank to keep the current audio.</p>}
+                    </div>
+                    <div>
+                        <label className="text-sm font-semibold mb-1 block">Image (Optional)</label>
+                        <div className="flex items-center space-x-4">
+                            <div className="w-20 h-20 rounded-2xl bg-light-surface dark:bg-dark-surface flex items-center justify-center">
+                                {previewUrl ? <img src={previewUrl} alt="Preview" className="w-full h-full object-cover rounded-2xl"/> : <ImageIcon className="w-8 h-8 text-gray-400"/>}
+                            </div>
+                            <input type="file" accept="image/*" onChange={handleImageChange} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-light-accent/10 dark:file:bg-dark-accent/10 file:text-light-accent dark:file:text-dark-accent hover:file:bg-light-accent/20 dark:hover:file:bg-dark-accent/20"/>
+                        </div>
+                    </div>
+                    <div className="flex justify-end space-x-2 pt-2">
+                        <button type="button" onClick={onClose} className="px-5 py-2 text-sm font-semibold rounded-full bg-light-divider dark:bg-dark-divider">Cancel</button>
+                        <button type="submit" className="px-5 py-2 text-sm font-semibold rounded-full bg-light-accent dark:bg-dark-accent text-white">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
 
-                <div className="flex items-center space-x-2">
-                    <button onClick={handleExportSounds} className="px-4 py-2 text-sm font-semibold rounded-full bg-light-surface dark:bg-dark-surface hover:opacity-90 transition-opacity shadow-soft dark:shadow-none dark:border dark:border-dark-divider">Export</button>
-                    <button onClick={() => setIsEditing(!isEditing)} className="px-5 py-2 text-sm font-semibold rounded-full bg-light-surface dark:bg-dark-surface hover:opacity-90 transition-opacity shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
-                        {isEditing ? 'Done' : 'Edit'}
-                    </button>
+const Soundboard: React.FC = () => {
+    const [sounds, setSounds] = useLocalStorage<Sound[]>('soundboard_sounds', []);
+    const [viewMode, setViewMode] = useLocalStorage<'grid' | 'list'>('soundboard_view_mode', 'grid');
+    const [gridSize, setGridSize] = useLocalStorage<'small' | 'medium' | 'large'>('soundboard_grid_size', 'medium');
+    const [editingSound, setEditingSound] = useState<Sound | null>(null);
+    const [activeSound, setActiveSound] = useState<{ id: string, isPlaying: boolean } | null>(null);
+
+    const audioRefs = useRef<{[key: string]: HTMLAudioElement}>({});
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const soundIdToUpdateImage = useRef<string | null>(null);
+
+    useEffect(() => {
+        // Cleanup audio instances on component unmount
+        return () => {
+            // FIX: Explicitly type `audio` as HTMLAudioElement to resolve an issue where
+            // TypeScript was inferring it as `unknown`, causing a type error.
+            Object.values(audioRefs.current).forEach((audio: HTMLAudioElement) => audio.pause());
+        };
+    }, []);
+
+    const togglePlay = (sound: Sound) => {
+        if (activeSound && activeSound.id === sound.id) {
+            if (activeSound.isPlaying) {
+                audioRefs.current[sound.id]?.pause();
+                setActiveSound({ ...activeSound, isPlaying: false });
+            } else {
+                audioRefs.current[sound.id]?.play().catch(e => console.error("Error playing sound:", e));
+                setActiveSound({ ...activeSound, isPlaying: true });
+            }
+        } else {
+            if (activeSound && audioRefs.current[activeSound.id]) {
+                audioRefs.current[activeSound.id].pause();
+                audioRefs.current[activeSound.id].currentTime = 0;
+            }
+            
+            const playAudio = (audio: HTMLAudioElement) => {
+                audio.play().catch(e => console.error("Error playing sound:", e));
+                 audio.onended = () => {
+                    setActiveSound(current => (current && current.id === sound.id ? null : current));
+                };
+            }
+            
+            if (audioRefs.current[sound.id]) {
+                audioRefs.current[sound.id].currentTime = 0;
+                playAudio(audioRefs.current[sound.id]);
+            } else {
+                const audio = new Audio(sound.dataUrl);
+                audioRefs.current[sound.id] = audio;
+                playAudio(audio);
+            }
+            setActiveSound({ id: sound.id, isPlaying: true });
+        }
+    };
+    
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    const handleSave = async (sound: Sound, audioFile: File | null, imageFile: File | null) => {
+        let soundToSave = { ...sound };
+        if (audioFile) {
+            soundToSave.dataUrl = await fileToBase64(audioFile);
+        }
+        if (imageFile) {
+            soundToSave.imageUrl = await fileToBase64(imageFile);
+        }
+        
+        const isEditing = sounds.some(s => s.id === soundToSave.id);
+        if (isEditing) {
+            setSounds(prev => prev.map(s => s.id === soundToSave.id ? soundToSave : s));
+        } else {
+            setSounds(prev => [...prev, soundToSave]);
+        }
+        setEditingSound(null);
+    };
+    
+    const triggerImageUpload = (soundId: string) => {
+        soundIdToUpdateImage.current = soundId;
+        imageInputRef.current?.click();
+    };
+
+    const handleImageFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        const soundId = soundIdToUpdateImage.current;
+        if (file && soundId) {
+            const imageUrl = await fileToBase64(file);
+            setSounds(prev => prev.map(s => s.id === soundId ? { ...s, imageUrl } : s));
+        }
+        if (imageInputRef.current) imageInputRef.current.value = "";
+        soundIdToUpdateImage.current = null;
+    };
+
+    const handleDelete = (id: string) => {
+        if (window.confirm("Are you sure you want to delete this sound?")) {
+            if (activeSound && activeSound.id === id) {
+                audioRefs.current[id]?.pause();
+                setActiveSound(null);
+            }
+            setSounds(prev => prev.filter(s => s.id !== id));
+        }
+    };
+
+    return (
+        <div className="h-full flex flex-col">
+            <input type="file" ref={imageInputRef} onChange={handleImageFileSelect} accept="image/*" className="hidden" />
+             <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center space-x-2 p-1 rounded-full bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider">
+                    <button onClick={() => setViewMode('grid')} className={`px-3 py-1.5 rounded-full text-sm font-semibold ${viewMode === 'grid' ? 'bg-light-accent text-white' : ''}`}><GridIcon className="w-5 h-5"/></button>
+                    <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-full text-sm font-semibold ${viewMode === 'list' ? 'bg-light-accent text-white' : ''}`}><ListIcon className="w-5 h-5"/></button>
                 </div>
+                {viewMode === 'grid' && (
+                    <div className="flex items-center space-x-2 p-1 rounded-full bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider">
+                        {(['small', 'medium', 'large'] as const).map(size => (
+                            <button key={size} onClick={() => setGridSize(size)} className={`px-3 py-1.5 rounded-full text-sm font-semibold capitalize ${gridSize === size ? 'bg-light-accent text-white' : ''}`}>{size}</button>
+                        ))}
+                    </div>
+                )}
             </div>
 
-            {viewMode === 'grid' && (
-                <div className="mb-4 flex items-center">
-                    <label className="text-sm font-semibold mr-2">Columns:</label>
-                    <input type="range" min="2" max="8" value={gridSize} onChange={e => setGridSize(parseInt(e.target.value))} className="w-48 align-middle"/>
-                    <span className="ml-2 text-sm font-mono bg-light-bg-primary dark:bg-dark-bg-secondary rounded-md px-2 py-0.5">{gridSize}</span>
-                </div>
-            )}
-
-            {filteredSounds.length > 0 ? (
-                viewMode === 'grid' ? (
-                    <div className={`grid gap-4`} style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}>
-                        {filteredSounds.map(sound => (
-                            <SoundItem key={sound.id} sound={sound} viewMode="grid" isEditing={isEditing} onPlay={() => playSound(sound)} onRemove={() => removeSound(sound.id)} onAddImage={handleAddImage(sound.id)} />
+            <div className="flex-grow overflow-y-auto -mx-4 px-4">
+                {viewMode === 'grid' ? (
+                    <div className="flex flex-wrap gap-4">
+                        {sounds.map(sound => (
+                            <SoundCard 
+                                key={sound.id} 
+                                sound={sound} 
+                                onPlay={() => togglePlay(sound)} 
+                                onEdit={() => setEditingSound(sound)} 
+                                onDelete={() => handleDelete(sound.id)}
+                                onImageUpload={() => triggerImageUpload(sound.id)}
+                                gridSize={gridSize} 
+                                isActive={activeSound?.id === sound.id}
+                                isPlaying={activeSound?.id === sound.id && activeSound.isPlaying}
+                            />
                         ))}
-                         <button
-                            onClick={() => setShowAddModal(true)}
-                            className="w-full aspect-square border-2 border-dashed border-light-divider dark:border-dark-divider rounded-4xl flex flex-col items-center justify-center p-2 text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-surface dark:hover:bg-dark-surface transition-colors"
-                        >
-                            <PlusIcon className="w-8 h-8" />
-                        </button>
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {filteredSounds.map(sound => (
-                            <SoundItem key={sound.id} sound={sound} viewMode="list" isEditing={isEditing} onPlay={() => playSound(sound)} onRemove={() => removeSound(sound.id)} onAddImage={handleAddImage(sound.id)} />
+                         {sounds.map(sound => (
+                            <SoundListItem 
+                                key={sound.id} 
+                                sound={sound} 
+                                onPlay={() => togglePlay(sound)} 
+                                onEdit={() => setEditingSound(sound)} 
+                                onDelete={() => handleDelete(sound.id)}
+                                isActive={activeSound?.id === sound.id}
+                                isPlaying={activeSound?.id === sound.id && activeSound.isPlaying}
+                             />
                         ))}
-                        <button onClick={() => setShowAddModal(true)} className="w-full border-2 border-dashed border-light-divider dark:border-dark-divider rounded-3xl p-3 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-surface dark:hover:bg-dark-surface transition-colors">
-                            <PlusIcon className="w-5 h-5 mr-2"/> Add Sound
-                        </button>
                     </div>
-                )
-            ) : (
-                 <div className="text-center text-light-text-secondary dark:text-dark-text-secondary mt-16">
-                    <MusicIcon className="w-12 h-12 mx-auto mb-4"/>
-                    <p className="font-semibold">{searchTerm ? 'No sounds match your search.' : 'Your soundboard is empty.'}</p>
-                    <p className="text-sm">{searchTerm ? 'Try a different search term.' : "Click the button below to upload your first clip."}</p>
-                     <button onClick={() => setShowAddModal(true)} className="mt-4 px-5 py-2 text-sm font-semibold rounded-full bg-light-accent dark:bg-dark-accent text-white">
-                        Add Sound
-                    </button>
-                </div>
-            )}
-
-
-            {showAddModal && (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-                    <div className="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-5xl p-5 w-full max-w-md" onClick={e => e.stopPropagation()}>
-                        <div className="w-12 h-1.5 bg-light-divider dark:bg-dark-divider rounded-full mx-auto mb-4"></div>
-                        <h3 className="text-lg font-bold mb-4 text-center">Add New Sound</h3>
-                        <div className="space-y-4">
-                            <input 
-                                type="text" 
-                                value={newSoundName} 
-                                onChange={e => setNewSoundName(e.target.value)} 
-                                placeholder="Sound Name" 
-                                required 
-                                className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm focus:outline-none"
-                            />
-                            <div>
-                                <label className="text-sm font-semibold mb-1 block">Audio File</label>
-                                <input 
-                                    type="file" 
-                                    accept="audio/*"
-                                    onChange={e => setNewSoundFile(e.target.files ? e.target.files[0] : null)}
-                                    required
-                                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-light-accent-subtle file:dark:bg-dark-accent-subtle file:text-light-accent file:dark:text-dark-accent hover:file:opacity-80"
-                                />
-                            </div>
-                            <div className="flex justify-end space-x-2 pt-2">
-                                <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2 text-sm font-semibold rounded-full bg-light-divider dark:bg-dark-divider">Cancel</button>
-                                <button type="button" onClick={handleAddSound} disabled={!newSoundName || !newSoundFile} className="px-5 py-2 text-sm font-semibold rounded-full bg-light-accent dark:bg-dark-accent text-white disabled:opacity-50">Add Sound</button>
-                            </div>
-                        </div>
+                )}
+                {sounds.length === 0 && (
+                    <div className="text-center text-light-text-secondary dark:text-dark-text-secondary mt-16">
+                        <p className="font-semibold">Your soundboard is empty.</p>
+                        <p className="text-sm">Tap the plus button to add a sound.</p>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
+
+            <button onClick={() => setEditingSound({} as Sound)} className="fixed bottom-24 right-6 bg-light-accent dark:bg-dark-accent text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center z-40 hover:opacity-90 transition-transform active:scale-95 md:bottom-6">
+                <PlusIcon className="w-8 h-8" />
+            </button>
+            
+            {editingSound && <SoundModal sound={sounds.some(s => s.id === editingSound.id) ? editingSound : null} onSave={handleSave} onClose={() => setEditingSound(null)} />}
         </div>
     );
 };

@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { Song } from '../../types';
-import { TrashIcon, PlusIcon, ShuffleIcon } from '../Icons';
+import { TrashIcon, PlusIcon, ShuffleIcon, StarIcon } from '../Icons';
 
 const PlaylistManager: React.FC = () => {
   const [songs, setSongs] = useLocalStorage<Song[]>('playlist', []);
@@ -12,6 +12,7 @@ const PlaylistManager: React.FC = () => {
   const [duration, setDuration] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showFavorites, setShowFavorites] = useState(false);
   
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
@@ -33,12 +34,21 @@ const PlaylistManager: React.FC = () => {
         title: song.title,
         artist: song.artist,
         duration: song.duration || 180, // Default 3 mins if not provided
+        isFavorite: false,
       };
       setSongs(prev => [...prev, newSong]);
   }
 
   const removeSong = (id: string) => {
     setSongs(prev => prev.filter(song => song.id !== id));
+  };
+  
+  const toggleFavorite = (id: string) => {
+    setSongs(prevSongs =>
+      prevSongs.map(song =>
+        song.id === id ? { ...song, isFavorite: !song.isFavorite } : song
+      )
+    );
   };
   
   const handleDragSort = () => {
@@ -77,11 +87,14 @@ const PlaylistManager: React.FC = () => {
   }, [songs]);
   
   const filteredSongs = useMemo(() => {
-    return songs.filter(song => 
-        song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        song.artist.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [songs, searchTerm]);
+    return songs.filter(song => {
+        if (showFavorites && !song.isFavorite) {
+            return false;
+        }
+        return song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               song.artist.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+  }, [songs, searchTerm, showFavorites]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -98,6 +111,13 @@ const PlaylistManager: React.FC = () => {
         </div>
          <div className="flex items-center space-x-2 mt-2 md:mt-0">
             <input type="text" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-full px-4 py-2 text-sm focus:outline-none w-48 shadow-soft dark:shadow-none"/>
+            <button 
+                onClick={() => setShowFavorites(!showFavorites)} 
+                className={`p-2.5 rounded-full bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider shadow-soft dark:shadow-none transition-colors ${showFavorites ? 'text-yellow-500' : 'text-light-text-secondary dark:text-dark-text-secondary'}`} 
+                aria-label="Show Favorites"
+            >
+                <StarIcon className="w-5 h-5" filled={showFavorites} />
+            </button>
             <button onClick={shufflePlaylist} className="p-2.5 rounded-full bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider shadow-soft dark:shadow-none" aria-label="Shuffle Playlist">
                 <ShuffleIcon className="w-5 h-5" />
             </button>
@@ -125,6 +145,12 @@ const PlaylistManager: React.FC = () => {
                       </div>
                   </div>
                   <div className="flex items-center space-x-0">
+                      <button 
+                        onClick={() => toggleFavorite(song.id)} 
+                        className={`p-2 rounded-full transition-colors ${song.isFavorite ? 'text-yellow-500' : 'text-light-text-secondary dark:text-dark-text-secondary hover:text-yellow-500/80'}`}
+                      >
+                          <StarIcon className="w-5 h-5" filled={!!song.isFavorite}/>
+                      </button>
                       <button onClick={() => removeSong(song.id)} className="p-2 rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary text-destructive">
                           <TrashIcon className="w-5 h-5"/>
                       </button>

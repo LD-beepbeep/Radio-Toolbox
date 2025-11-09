@@ -27,7 +27,6 @@ const TOOLS_LIST = [
   { id: 'Soundboard', title: 'Soundboard', description: 'Upload & play sound clips.', icon: MusicIcon },
   { id: 'ShowPosterMaker', title: 'Show Poster Maker', description: 'Quick graphics for shows.', icon: ShowPosterMakerIcon },
   { id: 'MicTest', title: 'Mic Test', description: 'Check your microphone quality.', icon: MicIcon },
-  { id: 'DbMeter', title: 'dB Meter', description: 'Monitor your microphone input levels.', icon: BarChartIcon },
   { id: 'VoiceWarmup', title: 'Voice Warm-up', description: 'Guided voice exercises.', icon: ActivityIcon },
   { id: 'MicDistanceHelper', title: 'Mic Distance Helper', description: 'Find optimal mic distance.', icon: TargetIcon },
   { id: 'AudioTrimmer', title: 'Audio Trimmer', description: 'Quickly trim audio clips.', icon: ScissorsIcon },

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { Recording } from '../../types';
@@ -14,51 +15,63 @@ const getWaveformAudioContext = () => {
 
 const Waveform: React.FC<{ dataUrl: string, isPlaying: boolean }> = ({ dataUrl, isPlaying }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
+    const isDarkMode = document.documentElement.classList.contains('dark');
 
     useEffect(() => {
         const audioContext = getWaveformAudioContext();
+        let isActive = true;
+        setAudioBuffer(null);
         
         fetch(dataUrl)
         .then(res => res.blob())
         .then(blob => blob.arrayBuffer())
         .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
-        .then(audioBuffer => {
-            const data = audioBuffer.getChannelData(0);
-            const canvas = canvasRef.current;
-            if (!canvas) return;
-            const context = canvas.getContext('2d');
-            if (!context) return;
-            
-            canvas.width = canvas.clientWidth * window.devicePixelRatio;
-            canvas.height = canvas.clientHeight * window.devicePixelRatio;
-            
-            const isDarkMode = document.documentElement.classList.contains('dark');
-            const strokeColor = isDarkMode ? '#8E8E93' : '#636366';
-            const progressColor = isDarkMode ? '#409CFF' : '#0A84FF';
-            context.strokeStyle = isPlaying ? progressColor : strokeColor;
-            context.lineWidth = 2 * window.devicePixelRatio;
-
-            const step = Math.ceil(data.length / canvas.width);
-            const amp = canvas.height / 2;
-            
-            context.clearRect(0, 0, canvas.width, canvas.height);
-            context.beginPath();
-            context.moveTo(0, amp);
-            for (let i = 0; i < canvas.width; i++) {
-                let min = 1.0;
-                let max = -1.0;
-                for (let j = 0; j < step; j++) {
-                    const datum = data[(i * step) + j];
-                    if (datum < min) min = datum;
-                    if (datum > max) max = datum;
-                }
-                const y = ((1 + min) * amp + (1 + max) * amp) / 2;
-                context.lineTo(i, y);
+        .then(decodedBuffer => {
+            if (isActive) {
+                setAudioBuffer(decodedBuffer);
             }
-            context.stroke();
         }).catch(err => console.error("Error processing audio for waveform: ", err));
+        
+        return () => { isActive = false; }
+    }, [dataUrl]);
 
-    }, [dataUrl, isPlaying]);
+    useEffect(() => {
+        if (!audioBuffer || !canvasRef.current) return;
+
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+        if (!context) return;
+        
+        canvas.width = canvas.clientWidth * window.devicePixelRatio;
+        canvas.height = canvas.clientHeight * window.devicePixelRatio;
+        
+        const data = audioBuffer.getChannelData(0);
+        const step = Math.ceil(data.length / canvas.width);
+        const amp = canvas.height / 2;
+        
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const strokeColor = isDarkMode ? '#8E8E93' : '#636366';
+        const progressColor = isDarkMode ? '#409CFF' : '#0A84FF';
+        context.strokeStyle = isPlaying ? progressColor : strokeColor;
+        context.lineWidth = 2 * window.devicePixelRatio;
+
+        context.beginPath();
+        context.moveTo(0, amp);
+        for (let i = 0; i < canvas.width; i++) {
+            let min = 1.0;
+            let max = -1.0;
+            for (let j = 0; j < step; j++) {
+                const datum = data[(i * step) + j];
+                if (datum < min) min = datum;
+                if (datum > max) max = datum;
+            }
+            const y = ((1 + min) * amp + (1 + max) * amp) / 2;
+            context.lineTo(i, y);
+        }
+        context.stroke();
+    }, [audioBuffer, isPlaying, isDarkMode]);
 
     return <canvas ref={canvasRef} className="w-full h-12" />;
 };

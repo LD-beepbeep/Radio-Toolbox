@@ -27,7 +27,7 @@ export const ALL_WIDGETS: WidgetInfo[] = [
 
 const WidgetWrapper: React.FC<{ title: string; onRemove?: () => void; isEditing?: boolean; children: React.ReactNode; className?: string; draggableProps?: any }> = ({ title, onRemove, isEditing, children, className, draggableProps }) => (
   <div 
-    className={`bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full relative shadow-soft dark:shadow-none dark:border dark:border-dark-divider ${className} ${isEditing ? 'cursor-grab animate-pulse ring-2 ring-light-accent/50 dark:ring-dark-accent/50' : ''}`}
+    className={`bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full relative shadow-soft dark:shadow-none dark:border dark:border-dark-divider ${className} ${isEditing ? 'cursor-grab ring-2 ring-light-accent dark:ring-dark-accent' : ''}`}
     {...draggableProps}
     >
     {isEditing && (
@@ -299,7 +299,7 @@ const OnAirStatusWidget: React.FC<{ id: string, onRemove?: () => void, isEditing
                     onClick={handleToggle}
                     className={`w-full h-full text-white font-bold text-2xl rounded-4xl transition-all duration-300 flex items-center justify-center ${isOnAir ? 'bg-destructive shadow-lg shadow-red-500/30' : 'bg-gray-500'}`}
                 >
-                    <div className={`w-4 h-4 rounded-full bg-white mr-3 ${isOnAir ? 'animate-pulse' : ''}`}></div>
+                    <div className={`w-4 h-4 rounded-full bg-white mr-3`}></div>
                     {isOnAir ? 'ON AIR' : 'OFF AIR'}
                 </button>
             </div>

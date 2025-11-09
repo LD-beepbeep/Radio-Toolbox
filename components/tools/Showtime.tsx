@@ -267,13 +267,21 @@ const MusicSegmentView: React.FC<{
 
     return (
         <div className="bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
-            {song && !isSelectingSong ? (
+            {!isSelectingSong ? (
                 <div className="flex flex-col items-center justify-center text-center flex-grow">
-                    <MusicIcon className="w-16 h-16 text-light-text-secondary dark:text-dark-text-secondary mb-4" />
-                    <h3 className="text-3xl font-bold">{song.title}</h3>
-                    <p className="text-xl text-light-text-secondary dark:text-dark-text-secondary">{song.artist}</p>
-                    <p className="text-6xl font-mono mt-4">{formatTime(song.duration)}</p>
-                    <button onClick={handleChangeSong} className="mt-6 px-4 py-2 text-sm font-semibold rounded-full bg-light-bg-primary dark:bg-dark-bg-secondary hover:bg-light-divider dark:hover:bg-dark-divider">Change Song</button>
+                    <h3 className="text-3xl font-bold">{segment.title}</h3>
+                    {song ? (
+                        <>
+                            <p className="text-xl text-light-text-secondary dark:text-dark-text-secondary mt-1">{song.title}</p>
+                            <p className="text-lg text-light-text-secondary dark:text-dark-text-secondary">{song.artist}</p>
+                        </>
+                    ) : (
+                        <MusicIcon className="w-16 h-16 text-light-text-secondary dark:text-dark-text-secondary my-4" />
+                    )}
+                    <p className="text-6xl font-mono mt-4">{formatTime(segment.duration)}</p>
+                    <button onClick={handleChangeSong} className="mt-6 px-4 py-2 text-sm font-semibold rounded-full bg-light-bg-primary dark:bg-dark-bg-secondary hover:bg-light-divider dark:hover:bg-dark-divider">
+                        {song ? 'Change Song' : 'Select Song'}
+                    </button>
                 </div>
             ) : (
                 <SongBrowser onSelect={handleSelect} localSongs={localSongs} setLocalSongs={setLocalSongs} usedSongIds={usedSongIds} />
@@ -501,7 +509,7 @@ const Showtime: React.FC = () => {
                         if (!activeSegmentId) return;
                         setSegmentsForCurrentShow(prev => prev.map(s => 
                             s.id === activeSegmentId 
-                            ? { ...s, songId, title, duration }
+                            ? { ...s, songId, duration, title: s.title || title }
                             : s
                         ));
                     }} 
@@ -565,7 +573,7 @@ const Showtime: React.FC = () => {
                                     onDragEnd={handleDragSort}
                                     onDragOver={(e) => e.preventDefault()}
                                     onClick={() => setActiveSegmentId(segment.id)}
-                                    className={`p-3 rounded-3xl flex items-center justify-between cursor-pointer transition-all ${activeSegmentId === segment.id ? 'ring-2' : 'hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary'}`}
+                                    className={`p-3 rounded-3xl flex items-center justify-between cursor-pointer transition-all ${activeSegmentId === segment.id ? 'ring-2 bg-light-bg-primary dark:bg-dark-bg-secondary' : 'hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary'}`}
                                     style={{ ringColor: segmentColor }}
                                 >
                                     <div className="flex items-center min-w-0">
