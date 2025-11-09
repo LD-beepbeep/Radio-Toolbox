@@ -1,9 +1,10 @@
 
 
+
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { Segment, SegmentType, Song, ProfileData } from '../../types';
-import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, MusicIcon, XIcon, ScriptIcon, PrinterIcon, CalendarDaysIcon, SearchIcon } from '../Icons';
+import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, MusicIcon, XIcon, ScriptIcon, PrinterIcon, CalendarDaysIcon, SearchIcon, ChevronRightIcon } from '../Icons';
 import { initialShowsData, initialProfile } from '../../data/initialData';
 import { songDatabase } from '../../data/songDatabase';
 
@@ -426,8 +427,43 @@ const Showtime: React.FC = () => {
     const [isTeleprompterOpen, setIsTeleprompterOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+    const [isOnAir, setIsOnAir] = useState(false);
+    const [onAirTimeLeft, setOnAirTimeLeft] = useState(0);
+
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
+    const timerIntervalRef = useRef<number | null>(null);
+
+    // FIX: Hoisted `segments` declaration above the `useEffect` hooks that depend on it
+    // to resolve a "used before declaration" error.
+    const segments = useMemo(() => {
+        if (!selectedShowId || !showsData[selectedShowId]) return [];
+        return showsData[selectedShowId];
+    }, [selectedShowId, showsData]);
+
+    // ON AIR Timer Logic
+    useEffect(() => {
+        const activeSegment = segments.find(s => s.id === activeSegmentId);
+        if (isOnAir && activeSegment) {
+            setOnAirTimeLeft(activeSegment.duration);
+            
+            timerIntervalRef.current = window.setInterval(() => {
+                setOnAirTimeLeft(prev => {
+                    if (prev <= 1) {
+                        if(timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        } else {
+            if(timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+        }
+
+        return () => {
+            if(timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+        }
+    }, [isOnAir, activeSegmentId, segments]);
 
     // Set initial active segment when a show is selected
     useEffect(() => {
@@ -445,14 +481,11 @@ const Showtime: React.FC = () => {
         }
     }, [profile.weeklySchedule.length]);
 
-    const segments = useMemo(() => {
-        if (!selectedShowId || !showsData[selectedShowId]) return [];
-        return showsData[selectedShowId];
-    }, [selectedShowId, showsData]);
-    
     const selectedShow = useMemo(() => profile.weeklySchedule.find(s => s.id === selectedShowId), [profile.weeklySchedule, selectedShowId]);
     const activeSegment = useMemo(() => segments.find(s => s.id === activeSegmentId), [segments, activeSegmentId]);
     const totalRuntime = useMemo(() => segments.reduce((acc, s) => acc + s.duration, 0), [segments]);
+    const activeSegmentIndex = useMemo(() => segments.findIndex(s => s.id === activeSegmentId), [segments, activeSegmentId]);
+    const nextSegment = useMemo(() => (activeSegmentIndex > -1 && activeSegmentIndex < segments.length - 1) ? segments[activeSegmentIndex + 1] : null, [segments, activeSegmentIndex]);
 
     const setSegmentsForCurrentShow = (newSegments: Segment[] | ((prev: Segment[]) => Segment[])) => {
         if (!selectedShowId) return;
@@ -461,6 +494,12 @@ const Showtime: React.FC = () => {
             const updatedSegments = typeof newSegments === 'function' ? newSegments(currentShowSegments) : newSegments;
             return { ...prev, [selectedShowId]: updatedSegments };
         });
+    };
+
+    const handleNextSegment = () => {
+        if (nextSegment) {
+            setActiveSegmentId(nextSegment.id);
+        }
     };
 
     const handleSaveSegment = (segmentToSave: Segment) => {
@@ -523,6 +562,65 @@ const Showtime: React.FC = () => {
                 return <PlaceholderView segment={activeSegment} />;
         }
     };
+
+    if (isOnAir) {
+        const timerColor = onAirTimeLeft <= 10 ? 'text-destructive' : 'text-light-text-primary dark:text-dark-text-primary';
+        const allSongs = [...localSongs, ...songDatabase];
+        const songForActiveSegment = activeSegment?.songId ? allSongs.find(s => s.id === activeSegment.songId) : null;
+        
+        return (
+            <div className="fixed inset-0 bg-light-bg-primary dark:bg-dark-bg-secondary z-[60] flex flex-col p-4">
+                <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                    <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 rounded-full bg-destructive animate-pulse"></div>
+                        <span className="font-bold text-destructive">ON AIR</span>
+                    </div>
+                    <button onClick={() => setIsOnAir(false)} className="px-4 py-2 text-sm font-semibold rounded-full bg-light-surface dark:bg-dark-surface">Exit ON AIR Mode</button>
+                </div>
+
+                <div className="flex-grow bg-light-surface dark:bg-dark-surface rounded-5xl shadow-soft dark:shadow-none dark:border dark:border-dark-divider p-6 flex flex-col justify-between">
+                    {activeSegment ? (
+                        <>
+                            <div className="text-center">
+                                <h2 className="text-4xl lg:text-5xl font-bold leading-tight">{activeSegment.title}</h2>
+                                <p className="text-lg text-light-text-secondary dark:text-dark-text-secondary mt-1">{activeSegment.type}</p>
+                            </div>
+
+                            <div className="text-center">
+                                <p className={`font-mono text-8xl lg:text-9xl font-bold tracking-tighter transition-colors ${timerColor}`}>
+                                    {formatTime(onAirTimeLeft)}
+                                </p>
+                            </div>
+                            
+                            <div className="h-48 overflow-y-auto bg-light-bg-primary dark:bg-dark-bg-secondary p-4 rounded-4xl text-lg leading-relaxed">
+                                {activeSegment.type === 'Music' && songForActiveSegment ? (
+                                    <div className="text-center">
+                                        <p className="font-bold">{songForActiveSegment.title}</p>
+                                        <p>{songForActiveSegment.artist}</p>
+                                    </div>
+                                ) : (
+                                    activeSegment.script || "No script for this segment."
+                                )}
+                            </div>
+                            
+                            <div className="flex justify-between items-center">
+                                <div className="text-left">
+                                    <p className="text-sm font-semibold text-light-text-secondary dark:text-dark-text-secondary">UP NEXT:</p>
+                                    <p className="font-bold">{nextSegment ? nextSegment.title : 'End of Show'}</p>
+                                </div>
+                                <button onClick={handleNextSegment} disabled={!nextSegment} className="flex items-center space-x-2 px-6 py-4 text-lg font-semibold rounded-full bg-light-accent dark:bg-dark-accent text-white disabled:opacity-50">
+                                    <span>Next</span>
+                                    <ChevronRightIcon className="w-6 h-6"/>
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-light-text-secondary dark:text-dark-text-secondary">No segment selected.</div>
+                    )}
+                </div>
+            </div>
+        );
+    }
     
     return (
         <div className="flex flex-col h-full">
@@ -544,14 +642,15 @@ const Showtime: React.FC = () => {
                     )}
                 </div>
                 <div className="flex items-center space-x-2">
-                    <button onClick={() => setIsScheduleModalOpen(true)} className="flex items-center space-x-2 px-4 py-2 text-sm font-semibold rounded-full bg-light-surface dark:bg-dark-surface hover:opacity-90 shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
-                        <CalendarDaysIcon className="w-5 h-5"/>
-                        <span className="hidden sm:inline">Edit Schedule</span>
-                    </button>
-                    <button onClick={() => window.print()} className="flex items-center space-x-2 px-4 py-2 text-sm font-semibold rounded-full bg-light-surface dark:bg-dark-surface hover:opacity-90 shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
-                        <PrinterIcon className="w-5 h-5"/>
-                        <span className="hidden sm:inline">Print Show</span>
-                    </button>
+                     <label className="flex items-center cursor-pointer bg-light-surface dark:bg-dark-surface p-1 pr-3 rounded-full shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
+                        <input type="checkbox" checked={isOnAir} onChange={() => setIsOnAir(!isOnAir)} className="sr-only peer" />
+                        <div className="w-8 h-8 rounded-full bg-light-bg-primary dark:bg-dark-bg-secondary peer-checked:bg-destructive transition-colors flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-light-text-secondary dark:text-dark-text-secondary peer-checked:bg-white transition-colors"></div>
+                        </div>
+                        <span className="ml-2 text-sm font-bold peer-checked:text-destructive">ON AIR</span>
+                    </label>
+                    <button onClick={() => setIsScheduleModalOpen(true)} className="flex items-center space-x-2 p-2.5 rounded-full bg-light-surface dark:bg-dark-surface hover:opacity-90 shadow-soft dark:shadow-none dark:border dark:border-dark-divider"><CalendarDaysIcon className="w-5 h-5"/></button>
+                    <button onClick={() => window.print()} className="flex items-center space-x-2 p-2.5 rounded-full bg-light-surface dark:bg-dark-surface hover:opacity-90 shadow-soft dark:shadow-none dark:border dark:border-dark-divider"><PrinterIcon className="w-5 h-5"/></button>
                 </div>
             </div>
 
@@ -564,6 +663,7 @@ const Showtime: React.FC = () => {
                      <div className="flex-grow overflow-y-auto space-y-2 -mx-2 px-2">
                         {segments.map((segment, index) => {
                             const segmentColor = segment.color || SEGMENT_COLORS[segment.type] || '#6b7280';
+                            const isActive = activeSegmentId === segment.id;
                             return (
                                 <div
                                     key={segment.id}
@@ -573,7 +673,7 @@ const Showtime: React.FC = () => {
                                     onDragEnd={handleDragSort}
                                     onDragOver={(e) => e.preventDefault()}
                                     onClick={() => setActiveSegmentId(segment.id)}
-                                    className={`p-3 rounded-3xl flex items-center justify-between cursor-pointer transition-all ${activeSegmentId === segment.id ? 'ring-2 bg-light-bg-primary dark:bg-dark-bg-secondary' : 'hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary'}`}
+                                    className={`p-3 rounded-3xl flex items-center justify-between cursor-pointer transition-all ${isActive ? 'ring-2 bg-light-bg-primary dark:bg-dark-bg-secondary' : 'hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary'}`}
                                     style={{ ringColor: segmentColor }}
                                 >
                                     <div className="flex items-center min-w-0">
