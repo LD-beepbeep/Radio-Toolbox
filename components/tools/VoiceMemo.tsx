@@ -1,9 +1,8 @@
 
-
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { Recording } from '../../types';
-import { PlayIcon, PauseIcon, DownloadIcon, TrashIcon, EditIcon } from '../Icons';
+import { PlayIcon, PauseIcon, DownloadIcon, TrashIcon, EditIcon, SettingsIcon, MapPinIcon, HeadphonesIcon } from '../Icons';
 
 let waveformAudioContext: AudioContext | null = null;
 const getWaveformAudioContext = () => {
@@ -53,7 +52,7 @@ const Waveform: React.FC<{ dataUrl: string, isPlaying: boolean }> = ({ dataUrl, 
                     if (datum < min) min = datum;
                     if (datum > max) max = datum;
                 }
-                const y = ((1 + min) * amp + (1 + max) * amp) / 2; // Midpoint for a cleaner line
+                const y = ((1 + min) * amp + (1 + max) * amp) / 2;
                 context.lineTo(i, y);
             }
             context.stroke();
@@ -85,6 +84,13 @@ const VoiceMemo: React.FC = () => {
   const [newRecordingName, setNewRecordingName] = useState('');
   const [newRecordingData, setNewRecordingData] = useState<{ dataUrl: string; duration: number } | null>(null);
 
+  const [showSettings, setShowSettings] = useState(false);
+  const [audioQuality, setAudioQuality] = useLocalStorage('voicememo_quality', 128000); // 128 kbps
+  const [isMonitoring, setIsMonitoring] = useLocalStorage('voicememo_monitoring', false);
+  const [currentLocation, setCurrentLocation] = useState<{ latitude: number, longitude: number } | null>(null);
+
+  const monitorSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const monitorGainRef = useRef<GainNode | null>(null);
 
   useEffect(() => {
     if ("MediaRecorder" in window) {
@@ -100,35 +106,54 @@ const VoiceMemo: React.FC = () => {
     } else {
       alert("The MediaRecorder API is not supported in your browser.");
     }
-
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      streamRef.current?.getTracks().forEach(track => track.stop());
+      if (audioRef.current) audioRef.current.pause();
     };
   }, []);
+
+   useEffect(() => {
+    if (isMonitoring && streamRef.current) {
+        const audioContext = getWaveformAudioContext();
+        if (audioContext.state === 'suspended') audioContext.resume();
+        
+        monitorSourceRef.current = audioContext.createMediaStreamSource(streamRef.current);
+        monitorGainRef.current = audioContext.createGain();
+        monitorGainRef.current.gain.value = 1;
+        monitorSourceRef.current.connect(monitorGainRef.current);
+        monitorGainRef.current.connect(audioContext.destination);
+    } else {
+        monitorSourceRef.current?.disconnect();
+        monitorGainRef.current?.disconnect();
+    }
+    return () => {
+        monitorSourceRef.current?.disconnect();
+        monitorGainRef.current?.disconnect();
+    };
+  }, [isMonitoring, streamRef.current]);
 
   const startRecording = () => {
     if (!streamRef.current) return;
     setIsRecording(true);
-    const media = new MediaRecorder(streamRef.current, { mimeType: 'audio/webm' });
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => setCurrentLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
+            (err) => { console.warn(`Geolocation Error: ${err.message}`); setCurrentLocation(null); }
+        );
+    }
+    
+    const media = new MediaRecorder(streamRef.current, { mimeType: 'audio/webm', bitsPerSecond: audioQuality });
     mediaRecorder.current = media;
     mediaRecorder.current.start();
     audioChunks.current = [];
     mediaRecorder.current.ondataavailable = (event) => {
-      if (typeof event.data === "undefined") return;
-      if (event.data.size === 0) return;
+      if (typeof event.data === "undefined" || event.data.size === 0) return;
       audioChunks.current.push(event.data);
     };
 
     setRecordingDuration(0);
-    durationInterval.current = window.setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-    }, 1000);
+    durationInterval.current = window.setInterval(() => setRecordingDuration(prev => prev + 1), 1000);
   };
 
   const stopRecording = () => {
@@ -142,12 +167,9 @@ const VoiceMemo: React.FC = () => {
       reader.readAsDataURL(audioBlob);
       reader.onloadend = () => {
           const base64data = reader.result as string;
-          const now = new Date();
-          
           setNewRecordingData({ dataUrl: base64data, duration: recordingDuration });
-          setNewRecordingName(`Recording - ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`);
+          setNewRecordingName(`Recording - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
           setIsSaving(true);
-
           audioChunks.current = [];
           setIsRecording(false);
           setRecordingDuration(0);
@@ -165,6 +187,7 @@ const VoiceMemo: React.FC = () => {
               dataUrl: newRecordingData.dataUrl,
               duration: newRecordingData.duration,
               createdAt: now,
+              location: currentLocation || undefined,
           };
           setRecordings(prev => [newRecording, ...prev]);
     }
@@ -175,6 +198,7 @@ const VoiceMemo: React.FC = () => {
     setIsSaving(false);
     setNewRecordingData(null);
     setNewRecordingName('');
+    setCurrentLocation(null);
   }
 
 
@@ -186,15 +210,6 @@ const VoiceMemo: React.FC = () => {
     setRecordings(prev => prev.filter(rec => rec.id !== id));
   };
   
-  const downloadRecording = (recording: Recording) => {
-    const a = document.createElement("a");
-    a.href = recording.dataUrl;
-    a.download = `${recording.name}.webm`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-  
   const playRecording = (recording: Recording) => {
     if (editingId === recording.id) return;
     if (playingId === recording.id) {
@@ -204,7 +219,7 @@ const VoiceMemo: React.FC = () => {
         if(audioRef.current) audioRef.current.pause();
         const newAudio = new Audio(recording.dataUrl);
         audioRef.current = newAudio;
-        newAudio.play();
+        newAudio.play().catch(e => console.error("Audio play failed:", e));
         newAudio.onended = () => setPlayingId(null);
         setPlayingId(recording.id);
     }
@@ -227,17 +242,13 @@ const VoiceMemo: React.FC = () => {
   };
 
   const filteredRecordings = useMemo(() => {
-    return recordings.filter(rec => 
-        rec.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return recordings.filter(rec => rec.name.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [recordings, searchTerm]);
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex flex-col items-center justify-center p-6 bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-6xl shadow-soft dark:shadow-none">
-        <div className="text-5xl font-mono mb-4 text-light-text-primary dark:text-dark-text-primary">
-            {formatTime(recordingDuration)}
-        </div>
+        <div className="text-5xl font-mono mb-4 text-light-text-primary dark:text-dark-text-primary">{formatTime(recordingDuration)}</div>
         <button
             onClick={isRecording ? stopRecording : startRecording}
             disabled={!permission}
@@ -251,76 +262,123 @@ const VoiceMemo: React.FC = () => {
       <div className="mt-8 flex-grow flex flex-col">
         <div className="flex justify-between items-center mb-4 px-1">
             <h3 className="text-xl font-semibold">Recordings ({recordings.length})</h3>
-            <input type="text" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-full px-4 py-2 text-sm focus:outline-none w-48 shadow-soft dark:shadow-none"/>
+            <div className="flex items-center space-x-2">
+                <input type="text" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-full px-4 py-2 text-sm focus:outline-none w-40 sm:w-48 shadow-soft dark:shadow-none"/>
+                <button onClick={() => setShowSettings(true)} className="w-10 h-10 flex items-center justify-center rounded-full bg-light-surface dark:bg-dark-surface shadow-soft dark:shadow-none dark:border dark:border-dark-divider"><SettingsIcon className="w-5 h-5"/></button>
+            </div>
         </div>
-        {recordings.length > 0 ? (
-          <div className="space-y-3 flex-grow overflow-y-auto -mx-4 px-4">
-              {filteredRecordings.map(rec => (
-                <div key={rec.id} className="p-4 bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-4xl shadow-soft dark:shadow-none">
-                  <div className="flex items-center justify-between">
-                    <button onClick={() => playRecording(rec)} className="flex items-center space-x-4 flex-grow">
-                        <div className="p-3 rounded-full bg-light-bg-primary dark:bg-dark-bg-secondary">
-                            {playingId === rec.id ? <PauseIcon className="w-5 h-5 text-light-accent dark:text-dark-accent"/> : <PlayIcon className="w-5 h-5"/>}
+        <div className="space-y-3 flex-grow overflow-y-auto -mx-4 px-4">
+              {filteredRecordings.map(rec => {
+                const Icon = playingId === rec.id ? PauseIcon : PlayIcon;
+                return (
+                    <div key={rec.id} className="p-4 bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-4xl shadow-soft dark:shadow-none">
+                    <div className="flex items-center justify-between">
+                        <button onClick={() => playRecording(rec)} className="flex items-center space-x-4 flex-grow min-w-0">
+                            <div className="p-3 rounded-full bg-light-bg-primary dark:bg-dark-bg-secondary">
+                                <Icon className="w-5 h-5 text-light-accent dark:text-dark-accent"/>
+                            </div>
+                            <div className="truncate">
+                                {editingId === rec.id ? (
+                                    <input type="text" value={editingName} onChange={(e) => setEditingName(e.target.value)} onBlur={() => handleSaveName(rec.id)} onKeyDown={(e) => e.key === 'Enter' && handleSaveName(rec.id)} autoFocus onClick={e => e.stopPropagation()} className="font-medium bg-light-bg-secondary dark:bg-dark-bg-secondary rounded px-1 -mx-1"/>
+                                ) : (<p className="font-medium text-left truncate">{rec.name}</p>)}
+                                <div className="flex items-center space-x-2 text-sm text-light-text-secondary dark:text-dark-text-secondary text-left">
+                                    <span>{formatTime(rec.duration)} - {new Date(rec.createdAt).toLocaleDateString()}</span>
+                                    {rec.location && <a href={`https://www.google.com/maps?q=${rec.location.latitude},${rec.location.longitude}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="flex items-center hover:text-light-accent dark:hover:text-dark-accent"><MapPinIcon className="w-4 h-4"/></a>}
+                                </div>
+                            </div>
+                        </button>
+                        <div className="flex items-center flex-shrink-0">
+                            <button onClick={() => handleStartEditing(rec)} className="p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary"><EditIcon className="w-5 h-5"/></button>
+                            <a href={rec.dataUrl} download={`${rec.name}.webm`} onClick={e=>e.stopPropagation()} className="p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary"><DownloadIcon className="w-5 h-5"/></a>
+                            <button onClick={() => deleteRecording(rec.id)} className="p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary text-destructive"><TrashIcon className="w-5 h-5"/></button>
                         </div>
-                        <div>
-                            {editingId === rec.id ? (
-                                <input 
-                                    type="text" 
-                                    value={editingName} 
-                                    onChange={(e) => setEditingName(e.target.value)} 
-                                    onBlur={() => handleSaveName(rec.id)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSaveName(rec.id)}
-                                    autoFocus
-                                    onClick={e => e.stopPropagation()}
-                                    className="font-medium bg-light-bg-secondary dark:bg-dark-bg-secondary rounded px-1 -mx-1"
-                                />
-                            ) : (
-                                <p className="font-medium text-left">{rec.name}</p>
-                            )}
-                            <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary text-left">{formatTime(rec.duration)} - {new Date(rec.createdAt).toLocaleDateString()}</p>
-                        </div>
-                    </button>
-                    <div className="flex items-center space-x-0">
-                        <button onClick={() => handleStartEditing(rec)} className="p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary">
-                            <EditIcon className="w-5 h-5"/>
-                        </button>
-                        <button onClick={() => downloadRecording(rec)} className="p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary">
-                            <DownloadIcon className="w-5 h-5"/>
-                        </button>
-                        <button onClick={() => deleteRecording(rec.id)} className="p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary text-destructive">
-                            <TrashIcon className="w-5 h-5"/>
-                        </button>
                     </div>
-                  </div>
-                   <div className="mt-3">
-                        <Waveform dataUrl={rec.dataUrl} isPlaying={playingId === rec.id} />
-                   </div>
-                </div>
-              ))}
+                    <div className="mt-3"><Waveform dataUrl={rec.dataUrl} isPlaying={playingId === rec.id} /></div>
+                    </div>
+                );
+              })}
           </div>
-        ) : (
-          <p className="text-center text-light-text-secondary dark:text-dark-text-secondary mt-8">No recordings yet.</p>
-        )}
       </div>
 
-       {isSaving && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={handleCancelSave}>
+       {isSaving && newRecordingData && <SaveRecordingModal data={newRecordingData} name={newRecordingName} setName={setNewRecordingName} onSave={handleSaveRecording} onCancel={handleCancelSave} />}
+       {showSettings && <SettingsModal onDone={() => setShowSettings(false)} quality={audioQuality} setQuality={setAudioQuality} monitoring={isMonitoring} setMonitoring={setIsMonitoring} />}
+    </div>
+  );
+};
+
+const SaveRecordingModal: React.FC<{data: { dataUrl: string, duration: number }, name: string, setName: (name: string) => void, onSave: (e: React.FormEvent) => void, onCancel: () => void}> = ({ data, name, setName, onSave, onCancel }) => {
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    
+    const togglePlay = () => {
+        if (!audioRef.current) return;
+        if (isPlaying) {
+            audioRef.current.pause();
+        } else {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onCancel}>
             <div className="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-5xl p-5 w-full max-w-md" onClick={e => e.stopPropagation()}>
                 <div className="w-12 h-1.5 bg-light-divider dark:bg-dark-divider rounded-full mx-auto mb-4"></div>
-                <h3 className="text-lg font-bold mb-4 text-center">Save Recording</h3>
-                <form onSubmit={handleSaveRecording} className="space-y-3">
-                    <input type="text" value={newRecordingName} onChange={e => setNewRecordingName(e.target.value)} placeholder="Recording Name" required className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm focus:outline-none"/>
+                <h3 className="text-lg font-bold mb-4 text-center">Preview & Save</h3>
+                <div className="p-4 bg-light-surface dark:bg-dark-surface rounded-4xl">
+                    <div className="flex items-center space-x-3">
+                        <audio ref={audioRef} src={data.dataUrl} onEnded={() => setIsPlaying(false)} className="hidden"></audio>
+                        <button onClick={togglePlay} className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-light-accent text-white">
+                            {isPlaying ? <PauseIcon className="w-6 h-6"/> : <PlayIcon className="w-6 h-6"/>}
+                        </button>
+                        <div className="w-full"><Waveform dataUrl={data.dataUrl} isPlaying={isPlaying} /></div>
+                    </div>
+                </div>
+                <form onSubmit={onSave} className="space-y-3 mt-4">
+                    <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Recording Name" required className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm focus:outline-none"/>
                     <div className="flex justify-end space-x-2 pt-2">
-                        <button type="button" onClick={handleCancelSave} className="px-5 py-2 text-sm font-semibold rounded-full bg-light-divider dark:bg-dark-divider">Cancel</button>
+                        <button type="button" onClick={onCancel} className="px-5 py-2 text-sm font-semibold rounded-full bg-light-divider dark:bg-dark-divider">Discard</button>
                         <button type="submit" className="px-5 py-2 text-sm font-semibold rounded-full bg-light-accent dark:bg-dark-accent text-white">Save</button>
                     </div>
                 </form>
             </div>
         </div>
-      )}
-
-    </div>
-  );
+    );
 };
+
+const SettingsModal: React.FC<{onDone:()=>void, quality: number, setQuality: (q:number)=>void, monitoring: boolean, setMonitoring: (m:boolean)=>void}> = ({onDone, quality, setQuality, monitoring, setMonitoring}) => {
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onDone}>
+            <div className="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-5xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                <h3 className="text-lg font-bold mb-4">Memo Settings</h3>
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-sm font-semibold mb-1 block">Audio Quality</label>
+                        <select value={quality} onChange={e => setQuality(Number(e.target.value))} className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm focus:outline-none appearance-none">
+                            <option value={64000}>Low - 64 kbps</option>
+                            <option value={128000}>Standard - 128 kbps</option>
+                            <option value={256000}>High - 256 kbps</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="flex justify-between items-center cursor-pointer">
+                            <span className="font-semibold text-sm">
+                                <HeadphonesIcon className="w-5 h-5 inline -mt-1 mr-2"/> Live Monitoring
+                                <p className="text-xs font-normal text-light-text-secondary dark:text-dark-text-secondary">Listen to mic input while recording. Headphones recommended.</p>
+                            </span>
+                            <div className="relative">
+                                <input type="checkbox" checked={monitoring} onChange={e => setMonitoring(e.target.checked)} className="sr-only peer" />
+                                <div className="w-11 h-6 bg-light-bg-primary peer-focus:outline-none rounded-full peer dark:bg-dark-bg-secondary peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-light-accent dark:peer-checked:bg-dark-accent"></div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <button onClick={onDone} className="mt-6 w-full px-5 py-2 text-sm font-semibold rounded-full bg-light-accent dark:bg-dark-accent text-white">Done</button>
+            </div>
+        </div>
+    );
+};
+
 
 export default VoiceMemo;

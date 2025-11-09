@@ -51,7 +51,7 @@ const TEMPLATES: Template[] = [
             { type: 'text', content: 'GLASS ANIMALS', x: 50, y: 250, size: 72, color: '#FFFFFF', font: 'Inter', width: 400, textAlign: 'left' },
             { type: 'text', content: 'An exclusive interview and a live performance of their new single.', x: 50, y: 310, size: 22, color: '#FFFFFF', font: 'Inter', width: 400, textAlign: 'left' },
         ]
-    },
+    }
 ];
 const FONTS: Font[] = ['Inter', 'Times New Roman', 'Courier New'];
 

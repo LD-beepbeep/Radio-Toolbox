@@ -40,12 +40,17 @@ export interface Recording {
   dataUrl: string;
   duration: number;
   createdAt: Date;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 export interface Sound {
   id: string;
   name: string;
   dataUrl: string;
+  imageUrl?: string;
 }
 
 export interface ProfileData {
@@ -81,6 +86,10 @@ export interface ProfileData {
     name: string;
   }[];
 }
+
+export type SharedProfileData = Omit<ProfileData, 'featuredDemos'> & {
+  featuredDemos?: Recording[];
+};
 
 export interface Link {
   id: string;

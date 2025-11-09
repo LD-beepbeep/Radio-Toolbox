@@ -26,6 +26,22 @@ const VoiceWarmup: React.FC = () => {
     const exercise = WARMUPS[currentExerciseIndex];
 
     useEffect(() => {
+        // Cleanup audio context on unmount to prevent lingering sounds.
+        return () => {
+            if (oscillatorRef.current) {
+                try {
+                    oscillatorRef.current.stop();
+                } catch(e) {
+                    // Oscillator might have already stopped
+                }
+            }
+            if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                audioContextRef.current.close();
+            }
+        };
+    }, []);
+
+    useEffect(() => {
         let interval: number | null = null;
         if (isActive && timeLeft > 0) {
             interval = window.setInterval(() => {
@@ -41,7 +57,7 @@ const VoiceWarmup: React.FC = () => {
     }, [isActive, timeLeft, exercise.isInteractive]);
 
     const startPitchGlide = () => {
-        if (!audioContextRef.current) {
+        if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
             audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
         }
         const audioCtx = audioContextRef.current;

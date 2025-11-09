@@ -1,6 +1,4 @@
-
-
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { DownloadIcon, PlayIcon, PauseIcon, UploadIcon, RefreshCwIcon } from '../Icons';
 
 type CompressionLevel = 'light' | 'medium' | 'heavy';
@@ -25,6 +23,19 @@ const NormalizeCompress: React.FC = () => {
 
     const audioContextRef = useRef<AudioContext | null>(null);
     const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+
+    useEffect(() => {
+        // Cleanup audio on unmount
+        return () => {
+            if (sourceNodeRef.current) {
+                try {
+                    sourceNodeRef.current.stop();
+                } catch (e) {
+                    console.warn("NormalizeCompress: Failed to stop audio source on unmount.", e);
+                }
+            }
+        };
+    }, []);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLDivElement>) => {
         let file: File | null = null;
@@ -94,19 +105,41 @@ const NormalizeCompress: React.FC = () => {
 
 
     const togglePlay = (type: 'original' | 'processed') => {
-        const bufferToPlay = type === 'original' ? originalBuffer : processedBuffer;
-        if (isPlaying) {
-            sourceNodeRef.current?.stop();
-            setIsPlaying(null);
-            if (isPlaying === type) return;
+        // If anything is playing, stop it first.
+        if (sourceNodeRef.current) {
+            sourceNodeRef.current.onended = null; // Avoid race condition with onended callback
+            sourceNodeRef.current.stop();
         }
-        if (!bufferToPlay || !audioContextRef.current) return;
-        if (audioContextRef.current.state === 'suspended') audioContextRef.current.resume();
+
+        // If the user clicked the currently playing button, we just stop.
+        if (isPlaying === type) {
+            setIsPlaying(null);
+            sourceNodeRef.current = null;
+            return;
+        }
+
+        // Proceed to play the selected audio
+        const bufferToPlay = type === 'original' ? originalBuffer : processedBuffer;
+        if (!bufferToPlay || !audioContextRef.current) {
+            setIsPlaying(null); // Ensure state is clean if we can't play
+            sourceNodeRef.current = null;
+            return;
+        }
+
+        if (audioContextRef.current.state === 'suspended') {
+            audioContextRef.current.resume();
+        }
         
         const source = audioContextRef.current.createBufferSource();
         source.buffer = bufferToPlay;
         source.connect(audioContextRef.current.destination);
-        source.onended = () => setIsPlaying(null);
+        source.onended = () => {
+            // Only update state if this is the currently active source
+            if (sourceNodeRef.current === source) {
+                setIsPlaying(null);
+                sourceNodeRef.current = null;
+            }
+        };
         source.start();
         sourceNodeRef.current = source;
         setIsPlaying(type);

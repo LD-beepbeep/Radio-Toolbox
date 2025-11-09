@@ -1,7 +1,7 @@
 
 
 import React from 'react';
-import { MicIcon, MusicIcon, Lightbulb, ScissorsIcon, TargetIcon, FileTextIcon, CalendarDaysIcon, ActivityIcon, NormalizeCompressIcon, WaveformVisualizerIcon, ShowPosterMakerIcon, BarChartIcon } from '../Icons';
+import { MicIcon, MusicIcon, Lightbulb, ScissorsIcon, TargetIcon, FileTextIcon, ActivityIcon, NormalizeCompressIcon, WaveformVisualizerIcon, ShowPosterMakerIcon, BarChartIcon, DownloadIcon } from '../Icons';
 
 interface ToolCardProps {
   title: string;
@@ -24,17 +24,17 @@ const ToolCard: React.FC<ToolCardProps> = ({ title, description, icon: Icon, onC
 
 
 const TOOLS_LIST = [
-  { id: 'Teleprompter', title: 'Teleprompter', description: 'Read from a scrolling script.', icon: FileTextIcon },
   { id: 'Soundboard', title: 'Soundboard', description: 'Upload & play sound clips.', icon: MusicIcon },
   { id: 'ShowPosterMaker', title: 'Show Poster Maker', description: 'Quick graphics for shows.', icon: ShowPosterMakerIcon },
-  { id: 'VoiceWarmup', title: 'Voice Warm-up', description: 'Guided voice exercises.', icon: ActivityIcon },
-  { id: 'VoicePitchMonitor', title: 'Voice Pitch Monitor', description: 'Visualize your vocal pitch.', icon: BarChartIcon },
-  { id: 'WaveformVisualizer', title: 'Waveform Visualizer', description: 'Create animated waveforms.', icon: WaveformVisualizerIcon },
-  { id: 'NormalizeCompress', title: 'Normalize & Compress', description: 'Simple audio processing.', icon: NormalizeCompressIcon },
   { id: 'MicTest', title: 'Mic Test', description: 'Check your microphone quality.', icon: MicIcon },
+  { id: 'DbMeter', title: 'dB Meter', description: 'Monitor your microphone input levels.', icon: BarChartIcon },
+  { id: 'VoiceWarmup', title: 'Voice Warm-up', description: 'Guided voice exercises.', icon: ActivityIcon },
   { id: 'MicDistanceHelper', title: 'Mic Distance Helper', description: 'Find optimal mic distance.', icon: TargetIcon },
   { id: 'AudioTrimmer', title: 'Audio Trimmer', description: 'Quickly trim audio clips.', icon: ScissorsIcon },
+  { id: 'NormalizeCompress', title: 'Normalize & Compress', description: 'Simple audio processing.', icon: NormalizeCompressIcon },
+  { id: 'WaveformVisualizer', title: 'Waveform Visualizer', description: 'Create animated waveforms.', icon: WaveformVisualizerIcon },
   { id: 'StudioFlashlight', title: 'Studio Flashlight', description: 'A bright, full-screen light.', icon: Lightbulb },
+  { id: 'ImportExport', title: 'Import / Export Data', description: 'Backup or restore your app data.', icon: DownloadIcon },
 ];
 
 interface ToolsProps {

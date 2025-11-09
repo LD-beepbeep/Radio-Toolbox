@@ -1,14 +1,31 @@
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { WidgetConfig, WidgetType, Link, Song, Recording, ProfileData } from '../../types';
 import { initialProfile } from '../../data/initialData';
 import { XIcon, PlusIcon, ExternalLinkIcon, TrashIcon, PlayIcon, PauseIcon, ScriptIcon, MicIcon, PlaylistIcon, BroadcastIcon } from '../Icons';
 
+export interface WidgetInfo {
+    type: WidgetType;
+    gridSpan: number;
+    description: string;
+    preview: React.ReactNode;
+}
+
+export const ALL_WIDGETS: WidgetInfo[] = [
+    { type: WidgetType.StudioClock, gridSpan: 2, description: "Real-time clock and stopwatch.", preview: <div className="text-center"><div className="text-3xl font-mono">10:09:45</div><div className="text-sm text-gray-400">01:30.45</div></div> },
+    { type: WidgetType.Schedule, gridSpan: 1, description: "Keep track of your show's segments.", preview: <ul className="text-xs space-y-1"><li>14:00: Live</li><li>15:00: Guest</li></ul> },
+    { type: WidgetType.Checklist, gridSpan: 1, description: "Ensure you're ready to go live.", preview: <ul className="text-xs space-y-1"><li>☑ Mic Check</li><li>☐ Show Notes</li></ul> },
+    { type: WidgetType.GuestCard, gridSpan: 1, description: "Jot down notes for your guest.", preview: <div className="text-xs space-y-1"><div className="font-semibold">Jane Doe</div><div>Topic: New Book</div></div> },
+    { type: WidgetType.QuickLinks, gridSpan: 1, description: "Access important websites quickly.", preview: <div className="text-xs space-y-1"><div className="flex items-center">News <ExternalLinkIcon className="w-3 h-3 ml-1" /></div><div className="flex items-center">Weather <ExternalLinkIcon className="w-3 h-3 ml-1" /></div></div> },
+    { type: WidgetType.OnAirStatus, gridSpan: 1, description: "Toggle your on-air status.", preview: <div className="w-full h-full flex items-center justify-center bg-red-500 text-white font-bold rounded-xl text-sm">ON AIR</div> },
+    { type: WidgetType.PlaylistPreview, gridSpan: 1, description: "See the next songs in your playlist.", preview: <div className="text-xs space-y-1"><div className="font-semibold">Song 1</div><div>Song 2</div></div> },
+    { type: WidgetType.RecentMemo, gridSpan: 1, description: "Quick access to your last memo.", preview: <div className="flex items-center text-xs"><MicIcon className="w-4 h-4 mr-2" /> Latest Memo</div> }
+];
+
+
 // --- WIDGET COMPONENTS ---
 
-const WidgetWrapper: React.FC<{ title: string; onRemove?: () => void; isEditing?: boolean; children: React.ReactNode; className?: string, draggableProps?: any }> = ({ title, onRemove, isEditing, children, className, draggableProps }) => (
+const WidgetWrapper: React.FC<{ title: string; onRemove?: () => void; isEditing?: boolean; children: React.ReactNode; className?: string; draggableProps?: any }> = ({ title, onRemove, isEditing, children, className, draggableProps }) => (
   <div 
     className={`bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full relative shadow-soft dark:shadow-none dark:border dark:border-dark-divider ${className} ${isEditing ? 'cursor-grab animate-pulse ring-2 ring-light-accent/50 dark:ring-dark-accent/50' : ''}`}
     {...draggableProps}
@@ -318,6 +335,12 @@ const RecentMemoWidget: React.FC<{ id: string, onRemove?: () => void, isEditing?
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     
+    useEffect(() => {
+        return () => {
+            audioRef.current?.pause();
+        };
+    }, []);
+
     const handlePlay = () => {
         if (!latestRecording) return;
         
@@ -369,25 +392,6 @@ const WIDGET_COMPONENTS: Record<WidgetType, React.FC<{ id: string, onRemove?: ()
   [WidgetType.PlaylistPreview]: PlaylistPreviewWidget,
   [WidgetType.RecentMemo]: RecentMemoWidget,
 };
-
-type WidgetInfo = {
-    type: WidgetType;
-    gridSpan: number;
-    description: string;
-    preview: React.ReactNode;
-};
-
-const ALL_WIDGETS: WidgetInfo[] = [
-    { type: WidgetType.StudioClock, gridSpan: 2, description: "Real-time clock and stopwatch.", preview: <div className="text-center"><div className="text-3xl font-mono">10:09:45</div><div className="text-sm text-gray-400">01:30.45</div></div> },
-    { type: WidgetType.Schedule, gridSpan: 1, description: "Keep track of your show's segments.", preview: <ul className="text-xs space-y-1"><li>14:00: Live</li><li>15:00: Guest</li></ul> },
-    { type: WidgetType.Checklist, gridSpan: 1, description: "Ensure you're ready to go live.", preview: <ul className="text-xs space-y-1"><li>☑ Mic Check</li><li>☐ Show Notes</li></ul> },
-    { type: WidgetType.GuestCard, gridSpan: 1, description: "Jot down notes for your guest.", preview: <div className="text-xs space-y-1"><div className="font-semibold">Jane Doe</div><div>Topic: New Book</div></div> },
-    { type: WidgetType.QuickLinks, gridSpan: 1, description: "Access important websites quickly.", preview: <div className="text-xs space-y-1"><div className="flex items-center">News <ExternalLinkIcon className="w-3 h-3 ml-1"/></div><div className="flex items-center">Weather <ExternalLinkIcon className="w-3 h-3 ml-1"/></div></div>},
-    { type: WidgetType.OnAirStatus, gridSpan: 1, description: "Toggle your on-air status.", preview: <div className="w-full h-full flex items-center justify-center bg-red-500 text-white font-bold rounded-xl text-sm">ON AIR</div> },
-    { type: WidgetType.PlaylistPreview, gridSpan: 1, description: "See the next songs in your playlist.", preview: <div className="text-xs space-y-1"><div className="font-semibold">Song 1</div><div>Song 2</div></div> },
-    { type: WidgetType.RecentMemo, gridSpan: 1, description: "Quick access to your last memo.", preview: <div className="flex items-center text-xs"><MicIcon className="w-4 h-4 mr-2"/> Latest Memo</div> },
-];
-
 
 // --- DASHBOARD ---
 const Dashboard: React.FC = () => {

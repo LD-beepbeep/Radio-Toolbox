@@ -248,6 +248,19 @@ const Profile: React.FC<ProfileProps> = ({ navigateTo }) => {
         }
     }
     
+    const getShareUrl = () => {
+        const profileForSharing = {
+            ...profile,
+            featuredDemos: profile.featuredDemos
+                ?.map(id => recordings.find(r => r.id === id))
+                .filter((r): r is Recording => !!r)
+        };
+        const jsonString = JSON.stringify(profileForSharing);
+        const encodedJson = encodeURIComponent(jsonString);
+        const base64Json = btoa(encodedJson);
+        return `${window.location.origin}?profile=${base64Json}`;
+    };
+    
     const handleDownloadHtml = () => {
         const htmlContent = generateProfileHTML(profile);
         const blob = new Blob([htmlContent], { type: 'text/html' });
@@ -294,7 +307,7 @@ const Profile: React.FC<ProfileProps> = ({ navigateTo }) => {
             
             <PrintLayout profile={profile} />
 
-            <div key={isEditing ? 'edit' : 'view'} className="space-y-8 no-print">
+            <div className="space-y-8 no-print">
                 {/* Header */}
                  <div className="bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-5xl flex flex-col items-center text-center p-6 shadow-soft dark:shadow-none">
                     <div className="relative">
@@ -432,7 +445,7 @@ const Profile: React.FC<ProfileProps> = ({ navigateTo }) => {
                              <div className="text-center p-4 bg-light-surface dark:bg-dark-surface rounded-4xl">
                                 <h4 className="font-semibold">Scan QR Code</h4>
                                 <img 
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(`${window.location.origin}?profile=${btoa(encodeURIComponent(JSON.stringify(profile)))}`)}`} 
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(getShareUrl())}`} 
                                     alt="Profile QR Code"
                                     className="w-48 h-48 mx-auto my-2 rounded-2xl"
                                 />

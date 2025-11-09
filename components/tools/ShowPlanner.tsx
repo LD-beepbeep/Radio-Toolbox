@@ -7,10 +7,10 @@ import { PlusIcon, TrashIcon } from '../Icons';
 import { initialSegments } from '../../data/initialData';
 
 const SEGMENT_COLORS: Record<SegmentType, string> = {
-  'Talk': 'bg-blue-500/80',
-  'Music': 'bg-purple-500/80',
-  'Ad Break': 'bg-yellow-500/80',
-  'Intro/Outro': 'bg-green-500/80',
+  'Talk': '#3b82f6',        // blue-500
+  'Music': '#8b5cf6',       // purple-500
+  'Ad Break': '#eab308',    // yellow-500
+  'Intro/Outro': '#22c55e', // green-500
 };
 
 const ShowPlanner: React.FC = () => {
@@ -78,28 +78,31 @@ const ShowPlanner: React.FC = () => {
             </div>
             
             <div className="bg-light-surface dark:bg-dark-surface rounded-xl p-2 space-y-2 min-h-[50vh]">
-                {segments.map((segment, index) => (
-                    <div 
-                        key={segment.id}
-                        draggable
-                        onDragStart={() => dragItem.current = index}
-                        onDragEnter={() => dragOverItem.current = index}
-                        onDragEnd={handleDragSort}
-                        onDragOver={(e) => e.preventDefault()}
-                        className={`p-3 rounded-lg text-white flex justify-between items-center cursor-pointer`}
-                        style={{ backgroundColor: SEGMENT_COLORS[segment.type].replace('/80', '') }}
-                        onClick={() => setEditingSegment(segment)}
-                    >
-                        <div className="flex items-center">
-                             <div className="w-8 mr-3 text-center text-sm font-mono opacity-80">{index + 1}</div>
-                             <div>
-                                <p className="font-bold">{segment.title}</p>
-                                <p className="text-xs opacity-90">{segment.type} - {formatTime(segment.duration)}</p>
-                             </div>
+                {segments.map((segment, index) => {
+                    const segmentColor = SEGMENT_COLORS[segment.type] || '#6b7280'; // Fallback for custom types
+                    return (
+                        <div 
+                            key={segment.id}
+                            draggable
+                            onDragStart={() => dragItem.current = index}
+                            onDragEnter={() => dragOverItem.current = index}
+                            onDragEnd={handleDragSort}
+                            onDragOver={(e) => e.preventDefault()}
+                            className={`p-3 rounded-lg text-white flex justify-between items-center cursor-pointer`}
+                            style={{ backgroundColor: segmentColor }}
+                            onClick={() => setEditingSegment(segment)}
+                        >
+                            <div className="flex items-center">
+                                 <div className="w-8 mr-3 text-center text-sm font-mono opacity-80">{index + 1}</div>
+                                 <div>
+                                    <p className="font-bold">{segment.title}</p>
+                                    <p className="text-xs opacity-90">{segment.type} - {formatTime(segment.duration)}</p>
+                                 </div>
+                            </div>
+                            <button onClick={(e) => {e.stopPropagation(); removeSegment(segment.id)}} className="p-1 rounded-full hover:bg-black/20"><TrashIcon className="w-5 h-5"/></button>
                         </div>
-                        <button onClick={(e) => {e.stopPropagation(); removeSegment(segment.id)}} className="p-1 rounded-full hover:bg-black/20"><TrashIcon className="w-5 h-5"/></button>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {editingSegment && (

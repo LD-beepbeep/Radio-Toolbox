@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { PlayIcon, TrashIcon } from '../Icons';
 
@@ -132,6 +131,7 @@ const MicTest: React.FC = () => {
             streamRef.current?.getTracks().forEach(track => track.stop());
             audioContextRef.current?.close();
             if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
+            audioPlayerRef.current?.pause();
         };
     }, []);
 

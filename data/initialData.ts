@@ -1,5 +1,3 @@
-
-
 import { ProfileData, Tab, TabSetting, Segment } from '../types';
 
 export const initialProfile: ProfileData = {
@@ -47,3 +45,8 @@ export const initialSegments: Segment[] = [
     { id: '4', type: 'Ad Break', title: 'Sponsor Messages', duration: 180, script: '' },
     { id: '5', type: 'Intro/Outro', title: 'Show Outro', duration: 90, script: 'And that\'s a wrap for this episode of The Sonic Journey. A big thank you to our guests and to you for listening. Join us next time...' },
 ];
+
+export const initialShowsData: Record<string, Segment[]> = {
+    'sched1': initialSegments, // Corresponds to "The Sonic Journey" in initialProfile
+    'sched2': [], // Corresponds to "Indie Spotlight" in initialProfile
+};

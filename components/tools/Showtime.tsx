@@ -1,8 +1,9 @@
+
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
-import { Segment, SegmentType, Song } from '../../types';
-import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, MusicIcon, XIcon, ScriptIcon, PrinterIcon } from '../Icons';
-import { initialSegments } from '../../data/initialData';
+import { Segment, SegmentType, Song, ProfileData } from '../../types';
+import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, MusicIcon, XIcon, ScriptIcon, PrinterIcon, CalendarDaysIcon } from '../Icons';
+import { initialShowsData, initialProfile } from '../../data/initialData';
 
 // --- UTILITIES & CONSTANTS ---
 const PREDEFINED_SEGMENT_TYPES: SegmentType[] = ['Talk', 'Music', 'Ad Break', 'Intro/Outro'];
@@ -22,10 +23,12 @@ const formatTime = (seconds: number, forceHours = false) => {
 
 // --- SUB-COMPONENTS ---
 
-const PrintableShow: React.FC<{ segments: Segment[], songs: Song[], totalRuntime: number }> = ({ segments, songs, totalRuntime }) => (
+const PrintableShow: React.FC<{ segments: Segment[], songs: Song[], showName: string }> = ({ segments, songs, showName }) => {
+    const totalRuntime = segments.reduce((acc, s) => acc + s.duration, 0);
+    return (
     <div id="printable-show">
         <div className="print-show-header">
-            <h1>Show Rundown</h1>
+            <h1>{showName} - Rundown</h1>
             <p>Total Runtime: {formatTime(totalRuntime, true)}</p>
         </div>
         {segments.map((segment, index) => {
@@ -43,14 +46,14 @@ const PrintableShow: React.FC<{ segments: Segment[], songs: Song[], totalRuntime
             );
         })}
     </div>
-);
+    )
+};
 
 
 const TeleprompterModal: React.FC<{
     segment: Segment;
     onClose: () => void;
-    onScriptChange: (newScript: string) => void;
-}> = ({ segment, onClose, onScriptChange }) => {
+}> = ({ segment, onClose }) => {
     const script = segment.script || '';
     const [isPlaying, setIsPlaying] = useState(false);
     const [speed, setSpeed] = useLocalStorage('teleprompter_speed', 2);
@@ -294,28 +297,131 @@ const EditSegmentModal: React.FC<{ segment: Segment; isNew: boolean; onClose: ()
     )
 }
 
+const EditScheduleModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    profile: ProfileData;
+    setProfile: React.Dispatch<React.SetStateAction<ProfileData>>;
+    setShowsData: React.Dispatch<React.SetStateAction<Record<string, Segment[]>>>;
+    setSelectedShowId: (id: string | null) => void;
+    selectedShowId: string | null;
+}> = ({ isOpen, onClose, profile, setProfile, setShowsData, setSelectedShowId, selectedShowId }) => {
+    if (!isOpen) return null;
+
+    const [localSchedule, setLocalSchedule] = useState(profile.weeklySchedule);
+
+    const handleUpdate = (id: string, field: 'day' | 'time' | 'show', value: string) => {
+        setLocalSchedule(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
+    };
+
+    const handleAdd = () => {
+        const newId = `sched_${Date.now()}`;
+        const newItem = { id: newId, day: 'New Day', time: '00:00', show: 'New Show' };
+        setLocalSchedule(prev => [...prev, newItem]);
+        setShowsData(prev => ({ ...prev, [newId]: [] }));
+    };
+
+    const handleDelete = (idToDelete: string) => {
+        setLocalSchedule(prev => prev.filter(item => item.id !== idToDelete));
+        setShowsData(prev => {
+            const newData = { ...prev };
+            delete newData[idToDelete];
+            return newData;
+        });
+        if (selectedShowId === idToDelete) {
+            const newSchedule = localSchedule.filter(s => s.id !== idToDelete);
+            setSelectedShowId(newSchedule[0]?.id || null);
+        }
+    };
+
+    const handleSave = () => {
+        setProfile(prev => ({ ...prev, weeklySchedule: localSchedule }));
+        onClose();
+    };
+
+    return (
+         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={handleSave}>
+            <div className="bg-light-bg-primary dark:bg-dark-bg-secondary rounded-6xl p-5 w-full max-w-lg h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="w-12 h-1.5 bg-light-divider dark:bg-dark-divider rounded-full mx-auto mb-4 flex-shrink-0"></div>
+                <h3 className="text-xl font-bold text-center mb-4 flex-shrink-0">Edit Weekly Schedule</h3>
+                <div className="flex-grow overflow-y-auto space-y-3">
+                    {localSchedule.map(item => (
+                        <div key={item.id} className="p-3 bg-light-surface dark:bg-dark-surface rounded-3xl flex items-center space-x-2">
+                            <input value={item.show} onChange={e => handleUpdate(item.id, 'show', e.target.value)} placeholder="Show Name" className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
+                            <input value={item.day} onChange={e => handleUpdate(item.id, 'day', e.target.value)} placeholder="Day(s)" className="w-1/2 bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
+                            <input value={item.time} onChange={e => handleUpdate(item.id, 'time', e.target.value)} placeholder="Time" className="w-1/3 bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
+                            <button onClick={() => handleDelete(item.id)} className="p-2 text-destructive rounded-full hover:bg-destructive/10"><TrashIcon className="w-5 h-5"/></button>
+                        </div>
+                    ))}
+                    <button onClick={handleAdd} className="w-full text-sm text-light-accent dark:text-dark-accent p-3 flex items-center justify-center rounded-3xl hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 mt-2">
+                        <PlusIcon className="w-4 h-4 mr-1" /> Add Show
+                    </button>
+                </div>
+                 <button onClick={handleSave} className="mt-4 w-full px-5 py-3 text-sm font-semibold rounded-full bg-light-accent dark:bg-dark-accent text-white">Done</button>
+            </div>
+        </div>
+    );
+};
+
+
 // --- MAIN COMPONENT ---
 const Showtime: React.FC = () => {
-    const [segments, setSegments] = useLocalStorage<Segment[]>('show_planner_segments', initialSegments);
+    const [profile, setProfile] = useLocalStorage<ProfileData>('user_profile', initialProfile);
+    const [showsData, setShowsData] = useLocalStorage<Record<string, Segment[]>>('shows_data', initialShowsData);
     const [songs, setSongs] = useLocalStorage<Song[]>('playlist', []);
-    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(segments[0]?.id || null);
+    const [selectedShowId, setSelectedShowId] = useState<string | null>(profile.weeklySchedule[0]?.id || null);
+    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
+
     const [editingSegment, setEditingSegment] = useState<Segment | null>(null);
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     const [showSongPicker, setShowSongPicker] = useState(false);
     const [isTeleprompterOpen, setIsTeleprompterOpen] = useState(false);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
 
-    const totalRuntime = useMemo(() => segments.reduce((acc, s) => acc + s.duration, 0), [segments]);
+    // Set initial active segment when a show is selected
+    useEffect(() => {
+        if(selectedShowId && showsData[selectedShowId]?.length > 0){
+            setActiveSegmentId(showsData[selectedShowId][0].id);
+        } else {
+            setActiveSegmentId(null);
+        }
+    }, [selectedShowId, showsData]);
+
+    // Open schedule modal on first run if no shows exist
+    useEffect(() => {
+        if (profile.weeklySchedule.length === 0) {
+            setIsScheduleModalOpen(true);
+        }
+    }, [profile.weeklySchedule.length]);
+
+    const segments = useMemo(() => {
+        if (!selectedShowId || !showsData[selectedShowId]) return [];
+        return showsData[selectedShowId];
+    }, [selectedShowId, showsData]);
+    
+    const selectedShow = useMemo(() => profile.weeklySchedule.find(s => s.id === selectedShowId), [profile.weeklySchedule, selectedShowId]);
     const activeSegment = useMemo(() => segments.find(s => s.id === activeSegmentId), [segments, activeSegmentId]);
+    const totalRuntime = useMemo(() => segments.reduce((acc, s) => acc + s.duration, 0), [segments]);
+
+    const setSegmentsForCurrentShow = (newSegments: Segment[] | ((prev: Segment[]) => Segment[])) => {
+        if (!selectedShowId) return;
+        setShowsData(prev => {
+            const currentShowSegments = prev[selectedShowId] || [];
+            const updatedSegments = typeof newSegments === 'function' ? newSegments(currentShowSegments) : newSegments;
+            return { ...prev, [selectedShowId]: updatedSegments };
+        });
+    };
 
     const handleSaveSegment = (segmentToSave: Segment) => {
         if (!segmentToSave.title) return;
         const exists = segments.some(s => s.id === segmentToSave.id);
         if (exists) {
-            setSegments(prev => prev.map(s => s.id === segmentToSave.id ? segmentToSave : s));
+            setSegmentsForCurrentShow(prev => prev.map(s => s.id === segmentToSave.id ? segmentToSave : s));
         } else {
-            setSegments(prev => [...prev, segmentToSave]);
+            setSegmentsForCurrentShow(prev => [...prev, segmentToSave]);
             setActiveSegmentId(segmentToSave.id);
         }
         setEditingSegment(null);
@@ -323,12 +429,12 @@ const Showtime: React.FC = () => {
 
     const handleScriptChange = (newScript: string) => {
         if (!activeSegmentId) return;
-        setSegments(prev => prev.map(s => s.id === activeSegmentId ? { ...s, script: newScript } : s));
+        setSegmentsForCurrentShow(prev => prev.map(s => s.id === activeSegmentId ? { ...s, script: newScript } : s));
     };
     
     const handleSongSelected = (song: Song) => {
         if (!activeSegmentId) return;
-        setSegments(prev => prev.map(s => 
+        setSegmentsForCurrentShow(prev => prev.map(s => 
             s.id === activeSegmentId 
             ? { ...s, songId: song.id, title: song.title, duration: song.duration }
             : s
@@ -340,16 +446,17 @@ const Showtime: React.FC = () => {
 
     const handleDragSort = () => {
         if (dragItem.current === null || dragOverItem.current === null) return;
-        const segmentsCopy = [...segments];
-        const draggedItem = segmentsCopy.splice(dragItem.current, 1)[0];
-        segmentsCopy.splice(dragOverItem.current, 0, draggedItem);
+        const newSegments = [...segments];
+        const draggedItem = newSegments.splice(dragItem.current, 1)[0];
+        newSegments.splice(dragOverItem.current, 0, draggedItem);
         dragItem.current = null;
         dragOverItem.current = null;
-        setSegments(segmentsCopy);
+        setSegmentsForCurrentShow(newSegments);
     };
 
     const renderContextView = () => {
-        if (!activeSegment) return <div className="bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full items-center justify-center text-center shadow-soft dark:shadow-none dark:border dark:border-dark-divider"><p className="text-light-text-secondary dark:text-dark-text-secondary">Select a segment to begin</p></div>;
+        if (!selectedShowId) return <div className="bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full items-center justify-center text-center shadow-soft dark:shadow-none dark:border dark:border-dark-divider"><p className="text-light-text-secondary dark:text-dark-text-secondary">Select a show to get started.</p></div>;
+        if (!activeSegment) return <div className="bg-light-surface dark:bg-dark-surface rounded-5xl p-5 flex flex-col h-full items-center justify-center text-center shadow-soft dark:shadow-none dark:border dark:border-dark-divider"><p className="text-light-text-secondary dark:text-dark-text-secondary">This show has no segments. Click 'Add Segment' to begin.</p></div>;
         switch (activeSegment.type) {
             case 'Talk':
             case 'Intro/Outro':
@@ -364,57 +471,94 @@ const Showtime: React.FC = () => {
     };
     
     return (
-        <div>
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg text-light-text-secondary dark:text-dark-text-secondary">Total Runtime: <span className="font-bold text-light-text-primary dark:text-dark-text-primary">{formatTime(totalRuntime, true)}</span></h2>
-                <button onClick={() => window.print()} className="flex items-center space-x-2 px-4 py-2 text-sm font-semibold rounded-full bg-light-surface dark:bg-dark-surface hover:opacity-90 transition-opacity shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
-                    <PrinterIcon className="w-5 h-5"/>
-                    <span>Print Show</span>
-                 </button>
+        <div className="flex flex-col h-full">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                <div className="relative w-full sm:w-auto">
+                    <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="w-full sm:w-64 text-left flex justify-between items-center px-4 py-2 font-semibold rounded-full bg-light-surface dark:bg-dark-surface shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
+                        <span>{selectedShow ? selectedShow.show : "Select a Show"}</span>
+                        <svg className={`w-5 h-5 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                    </button>
+                    {isDropdownOpen && (
+                        <div className="absolute top-full mt-2 w-full sm:w-64 bg-light-surface dark:bg-dark-surface shadow-lg rounded-3xl p-2 z-50 border dark:border-dark-divider">
+                            {profile.weeklySchedule.map(show => (
+                                <button key={show.id} onClick={() => { setSelectedShowId(show.id); setIsDropdownOpen(false); }} className="w-full text-left px-3 py-2 text-sm rounded-2xl hover:bg-light-accent-subtle dark:hover:bg-dark-accent-subtle">
+                                    <p className="font-semibold">{show.show}</p>
+                                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">{show.day} @ {show.time}</p>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <div className="flex items-center space-x-2">
+                    <button onClick={() => setIsScheduleModalOpen(true)} className="flex items-center space-x-2 px-4 py-2 text-sm font-semibold rounded-full bg-light-surface dark:bg-dark-surface hover:opacity-90 shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
+                        <CalendarDaysIcon className="w-5 h-5"/>
+                        <span className="hidden sm:inline">Edit Schedule</span>
+                    </button>
+                    <button onClick={() => window.print()} className="flex items-center space-x-2 px-4 py-2 text-sm font-semibold rounded-full bg-light-surface dark:bg-dark-surface hover:opacity-90 shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
+                        <PrinterIcon className="w-5 h-5"/>
+                        <span className="hidden sm:inline">Print Show</span>
+                    </button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                <div className="lg:col-span-1 bg-light-surface dark:bg-dark-surface rounded-5xl p-4 space-y-2 shadow-soft dark:shadow-none dark:border dark:border-dark-divider">
-                     {segments.map((segment, index) => {
-                        const segmentColor = segment.color || SEGMENT_COLORS[segment.type] || '#6b7280';
-                        return (
-                            <div
-                                key={segment.id}
-                                draggable
-                                onDragStart={() => dragItem.current = index}
-                                onDragEnter={() => dragOverItem.current = index}
-                                onDragEnd={handleDragSort}
-                                onDragOver={(e) => e.preventDefault()}
-                                onClick={() => setActiveSegmentId(segment.id)}
-                                className={`p-3 rounded-3xl flex items-center justify-between cursor-pointer transition-all ${activeSegmentId === segment.id ? 'ring-2' : 'hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary'}`}
-                                style={{ ringColor: segmentColor }}
-                            >
-                                <div className="flex items-center">
-                                    <div className="w-3 h-3 rounded-full mr-3 flex-shrink-0" style={{backgroundColor: segmentColor}}></div>
-                                    <div className="truncate">
-                                        <p className="font-semibold text-sm leading-tight truncate">{segment.title}</p>
-                                        <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">{formatTime(segment.duration)}</p>
+            <div className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                <div className="lg:col-span-1 bg-light-surface dark:bg-dark-surface rounded-5xl p-4 space-y-2 shadow-soft dark:shadow-none dark:border dark:border-dark-divider h-full max-h-[calc(100vh-250px)] lg:max-h-none lg:h-auto flex flex-col">
+                     <div className="flex-shrink-0 text-center py-2">
+                        <h3 className="font-bold text-lg">{selectedShow?.show || 'No Show Selected'}</h3>
+                        <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Total: {formatTime(totalRuntime)}</p>
+                     </div>
+                     <div className="flex-grow overflow-y-auto space-y-2 -mx-2 px-2">
+                        {segments.map((segment, index) => {
+                            const segmentColor = segment.color || SEGMENT_COLORS[segment.type] || '#6b7280';
+                            return (
+                                <div
+                                    key={segment.id}
+                                    draggable
+                                    onDragStart={() => dragItem.current = index}
+                                    onDragEnter={() => dragOverItem.current = index}
+                                    onDragEnd={handleDragSort}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onClick={() => setActiveSegmentId(segment.id)}
+                                    className={`p-3 rounded-3xl flex items-center justify-between cursor-pointer transition-all ${activeSegmentId === segment.id ? 'ring-2' : 'hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary'}`}
+                                    style={{ ringColor: segmentColor }}
+                                >
+                                    <div className="flex items-center min-w-0">
+                                        <div className="w-3 h-3 rounded-full mr-3 flex-shrink-0" style={{backgroundColor: segmentColor}}></div>
+                                        <div className="truncate">
+                                            <p className="font-semibold text-sm leading-tight truncate">{segment.title}</p>
+                                            <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">{formatTime(segment.duration)}</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex items-center space-x-1">
                                     <button onClick={(e) => { e.stopPropagation(); setEditingSegment(segment); }} className="p-1 rounded-full text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text-primary dark:hover:text-dark-text-primary">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
                                     </button>
                                 </div>
-                            </div>
-                        )
-                    })}
-                    <button onClick={handleAddNew} className="w-full text-sm text-light-accent dark:text-dark-accent p-3 flex items-center justify-center rounded-3xl hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 mt-2">
-                        <PlusIcon className="w-4 h-4 mr-1" /> Add Segment
-                    </button>
+                            )
+                        })}
+                    </div>
+                    {selectedShowId && (
+                        <button onClick={handleAddNew} className="flex-shrink-0 w-full text-sm text-light-accent dark:text-dark-accent p-3 flex items-center justify-center rounded-3xl hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 mt-2">
+                            <PlusIcon className="w-4 h-4 mr-1" /> Add Segment
+                        </button>
+                    )}
                 </div>
 
-                <div className="lg:col-span-2 h-[80vh] min-h-[600px]">
+                <div className="lg:col-span-2 h-[60vh] lg:h-full min-h-[500px]">
                     {renderContextView()}
                 </div>
             </div>
 
-            <PrintableShow segments={segments} songs={songs} totalRuntime={totalRuntime} />
+            {selectedShow && <PrintableShow segments={segments} songs={songs} showName={selectedShow.show} />}
+            
+            <EditScheduleModal
+                isOpen={isScheduleModalOpen}
+                onClose={() => setIsScheduleModalOpen(false)}
+                profile={profile}
+                setProfile={setProfile}
+                setShowsData={setShowsData}
+                selectedShowId={selectedShowId}
+                setSelectedShowId={setSelectedShowId}
+            />
 
             {editingSegment && (
                  <EditSegmentModal 
@@ -439,7 +583,6 @@ const Showtime: React.FC = () => {
                 <TeleprompterModal
                     segment={activeSegment}
                     onClose={() => setIsTeleprompterOpen(false)}
-                    onScriptChange={handleScriptChange}
                 />
             )}
         </div>

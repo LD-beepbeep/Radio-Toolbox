@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Tab, Theme, ProfileData } from './types';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { Tab, Theme, ProfileData, SharedProfileData, Recording } from './types';
 import Header from './components/Header';
 import TabBar from './components/TabBar';
 import Dashboard from './components/tools/Dashboard';
@@ -9,25 +10,63 @@ import Profile from './components/tools/Profile';
 import MicTest from './components/tools/MicTest';
 import Tools from './components/tools/Tools';
 import Soundboard from './components/tools/Soundboard';
-import Teleprompter from './components/tools/ScriptTimer';
 import StudioFlashlight from './components/tools/CallScreener';
 import VoiceWarmup from './components/tools/VoiceWarmup';
 import AudioTrimmer from './components/tools/AudioTrimmer';
 import MicDistanceHelper from './components/tools/MicDistanceHelper';
 import NormalizeCompress from './components/tools/NormalizeCompress';
 import WaveformVisualizer from './components/tools/WaveformVisualizer';
-import VoicePitchMonitor from './components/tools/VoicePitchMonitor';
 import ShowPosterMaker from './components/tools/ShowPosterMaker';
 import Settings from './components/tools/Settings';
 import Onboarding from './components/Onboarding';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { initialProfile } from './data/initialData';
-import { ExternalLinkIcon, TrophyIcon, XIcon } from './components/Icons';
+import { ExternalLinkIcon, TrophyIcon, XIcon, PlayIcon, PauseIcon } from './components/Icons';
+import DbMeter from './components/tools/DbMeter';
+import ImportExport from './components/tools/ImportExport';
 
 
-const SharedProfileViewer: React.FC<{ profile: ProfileData; onDismiss: () => void }> = ({ profile, onDismiss }) => {
+const SharedDemoPlayer: React.FC<{ recording: Recording }> = ({ recording }) => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const togglePlay = () => {
+        if (isPlaying && audioRef.current) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+        } else {
+            if (!audioRef.current) {
+                audioRef.current = new Audio(recording.dataUrl);
+                audioRef.current.onended = () => setIsPlaying(false);
+            }
+            audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+            setIsPlaying(true);
+        }
+    };
+    
+    useEffect(() => {
+        return () => {
+            audioRef.current?.pause();
+        }
+    }, []);
+
+    return (
+        <div className="flex items-center p-3 bg-light-bg-primary dark:bg-dark-bg-secondary rounded-3xl">
+            <button onClick={togglePlay} className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-light-surface dark:bg-dark-surface mr-3">
+                {isPlaying ? <PauseIcon className="w-5 h-5"/> : <PlayIcon className="w-5 h-5"/>}
+            </button>
+            <div className="truncate">
+                <p className="font-semibold text-sm truncate">{recording.name}</p>
+                <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">{new Date(recording.createdAt).toLocaleDateString()}</p>
+            </div>
+        </div>
+    );
+};
+
+
+const SharedProfileViewer: React.FC<{ profile: SharedProfileData; onDismiss: () => void }> = ({ profile, onDismiss }) => {
     const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
-    const Section: React.FC<{title: string; children: React.ReactNode, className?: string}> = ({title, children, className}) => (
+    const Section: React.FC<{title: string; children: React.ReactNode; className?: string}> = ({title, children, className}) => (
         <div>
             <h3 className="text-sm font-semibold mb-2 px-1 text-light-text-secondary dark:text-dark-text-secondary uppercase tracking-wider">{title}</h3>
             <div className={`bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider rounded-4xl overflow-hidden shadow-soft dark:shadow-none ${className}`}>
@@ -58,6 +97,16 @@ const SharedProfileViewer: React.FC<{ profile: ProfileData; onDismiss: () => voi
                         <p className="text-lg text-light-accent dark:text-dark-accent">{profile.title}</p>
                         <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">{profile.email}</p>
                     </div>
+
+                    {/* Demos */}
+                    {profile.featuredDemos && profile.featuredDemos.length > 0 && (
+                        <Section title="Featured Demos">
+                            <div className="p-4 space-y-3">
+                                {profile.featuredDemos.map(demo => <SharedDemoPlayer key={demo.id} recording={demo} />)}
+                            </div>
+                        </Section>
+                    )}
+
                     {/* Bio */}
                     <Section title="About Me"><p className="text-base leading-relaxed text-light-text-secondary dark:text-dark-text-secondary p-4">{profile.bio}</p></Section>
                     
@@ -112,7 +161,7 @@ const App: React.FC = () => {
   const currentView = viewStack[viewStack.length - 1];
   const [profile, setProfile] = useLocalStorage<ProfileData>('user_profile', initialProfile);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [sharedProfile, setSharedProfile] = useState<ProfileData | null>(null);
+  const [sharedProfile, setSharedProfile] = useState<SharedProfileData | null>(null);
 
 
   const [theme, setTheme] = useState<Theme>(() => {
@@ -153,9 +202,11 @@ const App: React.FC = () => {
   }, [theme]);
   
   const handleOnboardingComplete = (newProfileData: ProfileData) => {
-      setProfile(newProfileData);
-      localStorage.setItem('has_onboarded', 'true');
-      setShowOnboarding(false);
+      setProfile(newProfileData); // this will save the profile to localStorage
+      localStorage.setItem('has_onboarded', 'true'); // this sets the flag
+      // Onboarding component has already saved theme and widgets.
+      // Reload the page to ensure all useLocalStorage hooks are updated.
+      window.location.reload();
   };
 
   const toggleTheme = () => {
@@ -198,8 +249,6 @@ const App: React.FC = () => {
     switch (currentView) {
       case Tab.Dashboard:
         return <Dashboard />;
-      case 'Teleprompter':
-        return <Teleprompter />;
       case 'StudioFlashlight':
         return <StudioFlashlight isOn={isFlashlightOn} onToggle={toggleFlashlight} color={flashlightColor} setColor={setFlashlightColor} />;
       case 'AudioTrimmer':
@@ -224,8 +273,10 @@ const App: React.FC = () => {
         return <NormalizeCompress />;
       case 'WaveformVisualizer':
         return <WaveformVisualizer />;
-      case 'VoicePitchMonitor':
-        return <VoicePitchMonitor />;
+      case 'DbMeter':
+        return <DbMeter />;
+      case 'ImportExport':
+        return <ImportExport />;
       case 'ShowPosterMaker':
         return <ShowPosterMaker />;
       case Tab.Tools:

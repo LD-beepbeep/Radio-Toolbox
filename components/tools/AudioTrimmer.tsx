@@ -16,6 +16,19 @@ const AudioTrimmer: React.FC = () => {
     const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
     const HANDLE_WIDTH = 10; // px
 
+    useEffect(() => {
+        // Cleanup audio on unmount
+        return () => {
+            if (sourceNodeRef.current) {
+                try {
+                    sourceNodeRef.current.stop();
+                } catch (e) {
+                    console.warn("AudioTrimmer: Failed to stop audio source on unmount.", e);
+                }
+            }
+        };
+    }, []);
+
     const drawWaveform = useCallback((buffer: AudioBuffer) => {
         const canvas = waveformRef.current;
         if (!canvas) return;
