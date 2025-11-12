@@ -1,7 +1,7 @@
 
 
-
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { MicIcon, MusicIcon, ScissorsIcon, TargetIcon, FileTextIcon, ActivityIcon, NormalizeCompressIcon, WaveformVisualizerIcon, ShowPosterMakerIcon, BarChartIcon, DownloadIcon, Lightbulb } from '../Icons';
 
 interface ToolCardProps {

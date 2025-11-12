@@ -1,8 +1,7 @@
 
 
-
-
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
+import ReactDOM from 'react-dom';
 import { Tab, Theme, ProfileData, SharedProfileData, Recording } from './types';
 import Header from './components/Header';
 import TabBar from './components/TabBar';
@@ -28,8 +27,8 @@ import ImportExport from './components/tools/ImportExport';
 
 
 const SharedDemoPlayer: React.FC<{ recording: Recording }> = ({ recording }) => {
-    const [isPlaying, setIsPlaying] = useState(false);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [isPlaying, setIsPlaying] = React.useState(false);
+    const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
     const togglePlay = () => {
         if (isPlaying && audioRef.current) {
@@ -45,7 +44,7 @@ const SharedDemoPlayer: React.FC<{ recording: Recording }> = ({ recording }) => 
         }
     };
     
-    useEffect(() => {
+    React.useEffect(() => {
         return () => {
             audioRef.current?.pause();
         }
@@ -158,18 +157,18 @@ const SharedProfileViewer: React.FC<{ profile: SharedProfileData; onDismiss: () 
 
 
 const App: React.FC = () => {
-  const [viewStack, setViewStack] = useState<string[]>(['Dashboard']);
+  const [viewStack, setViewStack] = React.useState<string[]>(['Dashboard']);
   const currentView = viewStack[viewStack.length - 1];
   const [profile, setProfile] = useLocalStorage<ProfileData>('user_profile', initialProfile);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [sharedProfile, setSharedProfile] = useState<SharedProfileData | null>(null);
+  const [showOnboarding, setShowOnboarding] = React.useState(false);
+  const [sharedProfile, setSharedProfile] = React.useState<SharedProfileData | null>(null);
 
 
-  const [theme, setTheme] = useState<Theme>(() => {
+  const [theme, setTheme] = React.useState<Theme>(() => {
     return (localStorage.getItem('theme') as Theme) || Theme.Dark;
   });
   
-  useEffect(() => {
+  React.useEffect(() => {
       const hasOnboarded = localStorage.getItem('has_onboarded');
       if (!hasOnboarded) {
           setShowOnboarding(true);
@@ -190,7 +189,7 @@ const App: React.FC = () => {
       }
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (theme === Theme.Dark) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', Theme.Dark);

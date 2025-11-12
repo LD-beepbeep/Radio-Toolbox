@@ -204,3 +204,14 @@ export const PrinterIcon = (props: IconProps) => (
 export const CalendarDaysIcon = (props: IconProps) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
 );
+export const YouTubeIcon = (props: IconProps) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M21.5,8.5 C21.5,7.4 20.6,6.5 19.5,6.5 L4.5,6.5 C3.4,6.5 2.5,7.4 2.5,8.5 L2.5,15.5 C2.5,16.6 3.4,17.5 4.5,17.5 L19.5,17.5 C20.6,17.5 21.5,16.6 21.5,15.5 L21.5,8.5 Z" />
+        <polygon points="10,15 10,9 15,12" fill="currentColor" />
+    </svg>
+);
+export const SpotifyIcon = (props: IconProps) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" {...props}>
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.75 14.33c-.22.36-.68.46-1.04.24-2.9-1.78-6.52-2.19-10.88-1.2l-.26-1.02c4.72-1.08 8.7-.62 11.96 1.3.34.2.44.68.22 1.04v-.36zm.9-2.7c-.28.44-.84.6-1.28.3-3.22-1.98-8.14-2.58-11.9-1.42l-.34-1.32c4.14-1.24 9.5-.56 13.14 1.62.44.28.6.84.32 1.28v-.46zm.1-2.92C12.7 8.38 6.98 8.15 4.02 9.03l-.44-1.72c3.32-1 9.62-.72 13.62 1.7.5.3.68.96.38 1.48-.32.5-.96.68-1.48.38z" />
+    </svg>
+);

@@ -33,6 +33,10 @@ export interface Song {
   artist: string;
   duration: number; // in seconds
   isFavorite?: boolean;
+  youtubeUrl?: string;
+  spotifyUrl?: string;
+  rating?: number; // 0-5 stars
+  introDuration?: number; // in seconds
 }
 
 export interface Recording {

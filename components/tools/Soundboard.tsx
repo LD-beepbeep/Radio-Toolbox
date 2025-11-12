@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { Sound } from '../../types';
-import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, ImageIcon, EditIcon, ListIcon, GridIcon, RefreshCwIcon } from '../Icons';
+import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, ImageIcon, EditIcon, ListIcon, GridIcon, RefreshCwIcon, UploadIcon, DownloadIcon } from '../Icons';
 
 const SoundCard: React.FC<{
     sound: Sound;
@@ -14,7 +14,8 @@ const SoundCard: React.FC<{
     gridSize: 'small' | 'medium' | 'large';
     isActive: boolean;
     isPlaying: boolean;
-}> = ({ sound, onPlay, onEdit, onDelete, onImageUpload, gridSize, isActive, isPlaying }) => {
+    progress: number;
+}> = ({ sound, onPlay, onEdit, onDelete, onImageUpload, gridSize, isActive, isPlaying, progress }) => {
 
     const sizeClasses = {
         small: 'w-24 h-24',
@@ -40,6 +41,7 @@ const SoundCard: React.FC<{
                 <span>{sound.name}</span>
                 {sound.loop && <RefreshCwIcon className="w-3 h-3 flex-shrink-0" />}
             </div>
+             {progress > 0 && <div className="absolute bottom-0 left-0 h-1 bg-light-accent dark:bg-dark-accent" style={{ width: `${progress * 100}%` }}></div>}
             <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={onImageUpload} className="w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80"><ImageIcon className="w-3 h-3" /></button>
                 <button onClick={onEdit} className="w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80"><EditIcon className="w-3 h-3" /></button>
@@ -56,9 +58,10 @@ const SoundListItem: React.FC<{
     onDelete: () => void;
     isActive: boolean;
     isPlaying: boolean;
-}> = ({ sound, onPlay, onEdit, onDelete, isActive, isPlaying }) => {
+    progress: number;
+}> = ({ sound, onPlay, onEdit, onDelete, isActive, isPlaying, progress }) => {
     return (
-        <div className={`flex items-center p-3 dark:border dark:border-dark-divider rounded-3xl shadow-soft dark:shadow-none transition-colors ${isActive ? 'bg-light-accent-subtle dark:bg-dark-accent-subtle' : 'bg-light-surface dark:bg-dark-surface'}`}>
+        <div className={`relative overflow-hidden flex items-center p-3 dark:border dark:border-dark-divider rounded-3xl shadow-soft dark:shadow-none transition-colors ${isActive ? 'bg-light-accent-subtle dark:bg-dark-accent-subtle' : 'bg-light-surface dark:bg-dark-surface'}`}>
             <button onClick={onPlay} className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-light-accent dark:bg-dark-accent text-white mr-4">
                 {isPlaying ? <PauseIcon className="w-6 h-6"/> : <PlayIcon className="w-6 h-6"/>}
             </button>
@@ -70,6 +73,7 @@ const SoundListItem: React.FC<{
                 <button onClick={onEdit} className="p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary"><EditIcon className="w-5 h-5"/></button>
                 <button onClick={onDelete} className="p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary text-destructive"><TrashIcon className="w-5 h-5"/></button>
             </div>
+             {progress > 0 && <div className="absolute bottom-0 left-0 h-1 bg-light-accent dark:bg-dark-accent rounded-b-3xl" style={{ width: `${progress * 100}%` }} />}
         </div>
     );
 };
@@ -172,10 +176,35 @@ const Soundboard: React.FC = () => {
     const [gridSize, setGridSize] = useLocalStorage<'small' | 'medium' | 'large'>('soundboard_grid_size', 'medium');
     const [editingSound, setEditingSound] = useState<Sound | null>(null);
     const [activeSound, setActiveSound] = useState<{ id: string, isPlaying: boolean } | null>(null);
+    const [progress, setProgress] = useState(0);
 
     const audioRefs = useRef<{[key: string]: HTMLAudioElement}>({});
     const imageInputRef = useRef<HTMLInputElement>(null);
     const soundIdToUpdateImage = useRef<string | null>(null);
+    const progressIntervalRef = useRef<number|null>(null);
+    const importSoundsRef = useRef<HTMLInputElement>(null);
+
+    const activeAudioEl = activeSound ? audioRefs.current[activeSound.id] : null;
+
+    useEffect(() => {
+        if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+        }
+        if (activeSound?.isPlaying && activeAudioEl) {
+            progressIntervalRef.current = window.setInterval(() => {
+                if (activeAudioEl.duration > 0) {
+                    setProgress(activeAudioEl.currentTime / activeAudioEl.duration);
+                }
+            }, 100);
+        } else {
+            setProgress(0);
+        }
+        return () => {
+            if (progressIntervalRef.current) {
+                clearInterval(progressIntervalRef.current);
+            }
+        }
+    }, [activeSound, activeAudioEl]);
 
     useEffect(() => {
         // Cleanup audio instances on component unmount
@@ -277,21 +306,76 @@ const Soundboard: React.FC = () => {
         }
     };
 
+    const handleExport = () => {
+        if (sounds.length === 0) {
+            alert("Soundboard is empty. Nothing to export.");
+            return;
+        }
+        const dataStr = JSON.stringify(sounds, null, 2);
+        const dataBlob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.download = `soundboard_backup_${new Date().toISOString().split('T')[0]}.json`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!window.confirm("This will overwrite your current soundboard. Are you sure?")) {
+            if(importSoundsRef.current) importSoundsRef.current.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const text = event.target?.result as string;
+                const importedSounds: Sound[] = JSON.parse(text);
+                // Basic validation
+                if (Array.isArray(importedSounds) && importedSounds.every(s => 'id' in s && 'name' in s && 'dataUrl' in s)) {
+                    setSounds(importedSounds);
+                    alert("Soundboard imported successfully!");
+                } else {
+                    throw new Error("Invalid file format");
+                }
+            } catch (err) {
+                alert("Failed to import soundboard. Please check the file format.");
+                console.error(err);
+            } finally {
+                 if(importSoundsRef.current) importSoundsRef.current.value = '';
+            }
+        };
+        reader.readAsText(file);
+    };
+
+
     return (
         <div className="h-full flex flex-col">
             <input type="file" ref={imageInputRef} onChange={handleImageFileSelect} accept="image/*" className="hidden" />
+            <input type="file" ref={importSoundsRef} onChange={handleImport} accept=".json" className="hidden" />
              <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center space-x-2 p-1 rounded-full bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider">
                     <button onClick={() => setViewMode('grid')} className={`px-3 py-1.5 rounded-full text-sm font-semibold ${viewMode === 'grid' ? 'bg-light-accent text-white' : ''}`}><GridIcon className="w-5 h-5"/></button>
                     <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-full text-sm font-semibold ${viewMode === 'list' ? 'bg-light-accent text-white' : ''}`}><ListIcon className="w-5 h-5"/></button>
                 </div>
-                {viewMode === 'grid' && (
+
+                <div className="flex items-center space-x-2">
+                    {viewMode === 'grid' && (
+                        <div className="flex items-center space-x-2 p-1 rounded-full bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider">
+                            {(['small', 'medium', 'large'] as const).map(size => (
+                                <button key={size} onClick={() => setGridSize(size)} className={`px-3 py-1.5 rounded-full text-sm font-semibold capitalize ${gridSize === size ? 'bg-light-accent text-white' : ''}`}>{size}</button>
+                            ))}
+                        </div>
+                    )}
                     <div className="flex items-center space-x-2 p-1 rounded-full bg-light-surface dark:bg-dark-surface dark:border dark:border-dark-divider">
-                        {(['small', 'medium', 'large'] as const).map(size => (
-                            <button key={size} onClick={() => setGridSize(size)} className={`px-3 py-1.5 rounded-full text-sm font-semibold capitalize ${gridSize === size ? 'bg-light-accent text-white' : ''}`}>{size}</button>
-                        ))}
+                        <button onClick={() => importSoundsRef.current?.click()} className="px-3 py-1.5 rounded-full text-sm font-semibold" title="Import Soundboard"><UploadIcon className="w-5 h-5"/></button>
+                        <button onClick={handleExport} className="px-3 py-1.5 rounded-full text-sm font-semibold" title="Export Soundboard"><DownloadIcon className="w-5 h-5"/></button>
                     </div>
-                )}
+                </div>
             </div>
 
             <div className="flex-grow overflow-y-auto -mx-4 px-4">
@@ -308,6 +392,7 @@ const Soundboard: React.FC = () => {
                                 gridSize={gridSize} 
                                 isActive={activeSound?.id === sound.id}
                                 isPlaying={activeSound?.id === sound.id && activeSound.isPlaying}
+                                progress={activeSound?.id === sound.id && activeSound.isPlaying ? progress : 0}
                             />
                         ))}
                     </div>
@@ -322,6 +407,7 @@ const Soundboard: React.FC = () => {
                                 onDelete={() => handleDelete(sound.id)}
                                 isActive={activeSound?.id === sound.id}
                                 isPlaying={activeSound?.id === sound.id && activeSound.isPlaying}
+                                progress={activeSound?.id === sound.id && activeSound.isPlaying ? progress : 0}
                              />
                         ))}
                     </div>

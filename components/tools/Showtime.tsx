@@ -1,13 +1,13 @@
 
 
-
-
-import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { useLocalStorage } from '../../hooks/useLocalStorage';
+import React from 'react';
+import ReactDOM from 'react-dom';
 import { Segment, SegmentType, Song, ProfileData } from '../../types';
-import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, MusicIcon, XIcon, ScriptIcon, PrinterIcon, CalendarDaysIcon, SearchIcon, ChevronRightIcon } from '../Icons';
+import { PlusIcon, TrashIcon, PlayIcon, PauseIcon, MusicIcon, XIcon, ScriptIcon, PrinterIcon, CalendarDaysIcon, SearchIcon, ChevronRightIcon, StarIcon, EditIcon, YouTubeIcon, SpotifyIcon, UploadIcon, DownloadIcon, RefreshCwIcon } from '../Icons';
 import { initialShowsData, initialProfile } from '../../data/initialData';
 import { songDatabase } from '../../data/songDatabase';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
+
 
 // --- UTILITIES & CONSTANTS ---
 const PREDEFINED_SEGMENT_TYPES: SegmentType[] = ['Talk', 'Music', 'Ad Break', 'Intro/Outro'];
@@ -60,10 +60,10 @@ const TeleprompterModal: React.FC<{
     onClose: () => void;
 }> = ({ segment, onClose }) => {
     const script = segment.script || '';
-    const [isPlaying, setIsPlaying] = useState(false);
+    const [isPlaying, setIsPlaying] = React.useState(false);
     const [speed, setSpeed] = useLocalStorage('teleprompter_speed', 2);
-    const prompterRef = useRef<HTMLDivElement>(null);
-    const scrollIntervalRef = useRef<number | null>(null);
+    const prompterRef = React.useRef<HTMLDivElement>(null);
+    const scrollIntervalRef = React.useRef<number | null>(null);
 
     const startScrolling = () => {
         if (!prompterRef.current) return;
@@ -83,13 +83,13 @@ const TeleprompterModal: React.FC<{
         if (scrollIntervalRef.current) cancelAnimationFrame(scrollIntervalRef.current);
     };
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (isPlaying) startScrolling();
         else stopScrolling();
         return () => stopScrolling();
     }, [isPlaying, speed]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (prompterRef.current) prompterRef.current.scrollTop = 0;
         setIsPlaying(false);
     }, [segment]);
@@ -138,99 +138,209 @@ const TalkSegmentView: React.FC<{ segment: Segment; onOpenTeleprompter: () => vo
     </div>
 );
 
+const EditSongModal: React.FC<{ song: Song; onSave: (song: Song) => void; onClose: () => void;}> = ({ song, onSave, onClose }) => {
+    const [editedSong, setEditedSong] = React.useState(song);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setEditedSong(prev => ({...prev, [name]: name.includes('Duration') ? parseInt(value, 10) || 0 : value }));
+    };
+
+    const handleSave = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSave(editedSong);
+    };
+    
+    return (
+        <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-5xl p-5 w-full max-w-md" onClick={e => e.stopPropagation()}>
+                <h3 className="text-lg font-bold mb-4 text-center">Edit Song</h3>
+                <form onSubmit={handleSave} className="space-y-3">
+                    <input name="title" value={editedSong.title} onChange={handleChange} placeholder="Title" required className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm"/>
+                    <input name="artist" value={editedSong.artist} onChange={handleChange} placeholder="Artist" required className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm"/>
+                    <div className="flex space-x-2">
+                      <input name="duration" type="number" value={editedSong.duration} onChange={handleChange} placeholder="Duration (sec)" required className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm"/>
+                      <input name="introDuration" type="number" value={editedSong.introDuration || ''} onChange={handleChange} placeholder="Intro (sec)" className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm"/>
+                    </div>
+                    <input name="youtubeUrl" type="url" value={editedSong.youtubeUrl || ''} onChange={handleChange} placeholder="YouTube URL" className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm"/>
+                    <input name="spotifyUrl" type="url" value={editedSong.spotifyUrl || ''} onChange={handleChange} placeholder="Spotify URL" className="w-full bg-light-surface dark:bg-dark-surface rounded-2xl p-3 text-sm"/>
+                    <div className="flex justify-end space-x-2 pt-2">
+                        <button type="button" onClick={onClose} className="px-5 py-2 text-sm font-semibold rounded-full bg-light-divider dark:bg-dark-divider">Cancel</button>
+                        <button type="submit" className="px-5 py-2 text-sm font-semibold rounded-full bg-light-accent dark:bg-dark-accent text-white">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    )
+}
+
+
 const SongBrowser: React.FC<{
   onSelect: (song: Song) => void;
   localSongs: Song[];
   setLocalSongs: React.Dispatch<React.SetStateAction<Song[]>>;
   usedSongIds: Set<string | undefined>;
 }> = ({ onSelect, localSongs, setLocalSongs, usedSongIds }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newArtist, setNewArtist] = useState('');
-  const [newDuration, setNewDuration] = useState('');
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [showAddForm, setShowAddForm] = React.useState(false);
+  const [newTitle, setNewTitle] = React.useState('');
+  const [newArtist, setNewArtist] = React.useState('');
+  const [newDuration, setNewDuration] = React.useState('');
+  const [newIntroDuration, setNewIntroDuration] = React.useState('');
+  const [newYoutubeUrl, setNewYoutubeUrl] = React.useState('');
+  const [newSpotifyUrl, setNewSpotifyUrl] = React.useState('');
+  const [editingSong, setEditingSong] = React.useState<Song | null>(null);
+  const importSongsRef = React.useRef<HTMLInputElement>(null);
 
+  const handleStartEditing = (song: Song & { isLocal?: boolean }) => {
+    let songToEdit: Song;
+    const existingLocalVersion = localSongs.find(s => s.id === song.id);
+    if (existingLocalVersion) {
+        songToEdit = existingLocalVersion;
+    } else {
+        const { isLocal, ...newLocalSong } = song;
+        setLocalSongs(prev => [newLocalSong, ...prev]);
+        songToEdit = newLocalSong;
+    }
+    setEditingSong(songToEdit);
+  };
+
+  const handleEditSong = (updatedSong: Song) => {
+    setLocalSongs(prev => prev.map(s => s.id === updatedSong.id ? updatedSong : s));
+    setEditingSong(null);
+  };
+  
   const handleAddSong = (e: React.FormEvent) => {
     e.preventDefault();
     if (newTitle && newArtist && newDuration) {
-      const newSong: Song = {
-        id: `local_${Date.now()}`,
-        title: newTitle,
-        artist: newArtist,
-        duration: parseInt(newDuration, 10),
-      };
+        const newSong: Song = {
+            id: `local_${Date.now()}`,
+            title: newTitle,
+            artist: newArtist,
+            duration: parseInt(newDuration, 10),
+            introDuration: newIntroDuration ? parseInt(newIntroDuration, 10) : undefined,
+            youtubeUrl: newYoutubeUrl || undefined,
+            spotifyUrl: newSpotifyUrl || undefined,
+        };
       setLocalSongs(prev => [newSong, ...prev]);
-      setNewTitle('');
-      setNewArtist('');
-      setNewDuration('');
+      setNewTitle(''); setNewArtist(''); setNewDuration(''); setNewIntroDuration(''); setNewYoutubeUrl(''); setNewSpotifyUrl('');
       setShowAddForm(false);
     }
   };
   
-  const filteredDiscoverSongs = songDatabase.filter(s => 
-    s.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.artist.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleExport = () => {
+    const allSongsToExport = [...localSongs, ...songDatabase.filter(dbs => !localSongs.some(ls => ls.id === dbs.id))];
+    if (allSongsToExport.length === 0) return alert("Your library is empty. Nothing to export.");
+    const dataStr = JSON.stringify(allSongsToExport, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.download = `song_library_${new Date().toISOString().split('T')[0]}.json`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
-  const filteredLocalSongs = localSongs.filter(s => 
-    s.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.artist.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (!window.confirm("This will overwrite your local song library additions and edits. Are you sure?")) {
+          if(importSongsRef.current) importSongsRef.current.value = '';
+          return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          try {
+              const importedSongs: Song[] = JSON.parse(event.target?.result as string);
+              if (Array.isArray(importedSongs) && importedSongs.every(s => 'id' in s && 'title' in s)) {
+                  setLocalSongs(importedSongs.filter(s => s.id.startsWith('local_') || songDatabase.some(dbs => dbs.id === s.id)));
+                  alert("Song library imported successfully!");
+              } else { throw new Error("Invalid file format"); }
+          } catch (err) { alert("Failed to import songs. Please check file format."); } 
+          finally { if(importSongsRef.current) importSongsRef.current.value = ''; }
+      };
+      reader.readAsText(file);
+  };
 
-  const SongListItem: React.FC<{ song: Song, isUsed: boolean }> = ({ song, isUsed }) => (
-    <button
-      onClick={() => onSelect(song)}
-      disabled={isUsed}
-      className={`w-full text-left p-3 flex items-center justify-between rounded-3xl transition-colors ${isUsed ? 'bg-light-surface/50 dark:bg-dark-surface/50 opacity-50 cursor-not-allowed' : 'bg-light-bg-primary dark:bg-dark-bg-secondary hover:bg-light-accent-subtle dark:hover:bg-dark-accent-subtle'}`}
-    >
-      <div>
-        <p className="font-semibold text-sm">{song.title}</p>
-        <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">{song.artist}</p>
-      </div>
-      <span className="text-xs font-mono">{formatTime(song.duration)}</span>
-    </button>
+  const allSongs = React.useMemo(() => {
+    const localSongIds = new Set(localSongs.map(s => s.id));
+    const dbSongsWithoutLocalOverrides = songDatabase.filter(s => !localSongIds.has(s.id));
+    
+    return [
+      ...localSongs.map(s => ({...s, isLocal: true})),
+      ...dbSongsWithoutLocalOverrides.map(s => ({...s, isLocal: false}))
+    ];
+  }, [localSongs]);
+
+  const filteredSongs = React.useMemo(() => allSongs.filter(s => 
+      (s.title.toLowerCase().includes(searchTerm.toLowerCase()) || s.artist.toLowerCase().includes(searchTerm.toLowerCase()))
+  ), [allSongs, searchTerm]);
+
+  const SongListItem: React.FC<{
+     song: Song & {isLocal?: boolean};
+     isUsed: boolean;
+     onEdit: (song: Song & {isLocal?: boolean}) => void;
+    }> = ({ song, isUsed, onEdit }) => (
+    <div className={`w-full text-left p-3 rounded-3xl transition-colors group ${isUsed ? 'bg-light-surface/50 dark:bg-dark-surface/50 opacity-60' : 'bg-light-bg-primary dark:bg-dark-bg-secondary hover:bg-light-accent-subtle dark:hover:bg-dark-accent-subtle'}`}>
+        <div className="flex items-center justify-between">
+            <div onClick={() => !isUsed && onSelect(song)} className={`flex-grow truncate pr-2 ${isUsed ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                <p className="font-semibold text-sm">{song.title}</p>
+                <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">{song.artist}</p>
+            </div>
+            <div className="flex items-center space-x-1 text-light-text-secondary dark:text-dark-text-secondary flex-shrink-0">
+              <span className="text-xs font-mono">{formatTime(song.duration)}</span>
+              <button onClick={() => onEdit(song)} className="p-1 rounded-full opacity-0 group-hover:opacity-100 hover:text-light-text-primary dark:hover:text-dark-text-primary"><EditIcon className="w-4 h-4"/></button>
+            </div>
+        </div>
+        {(song.youtubeUrl || song.spotifyUrl || song.introDuration) && (
+            <div className="mt-2 pt-2 border-t border-light-divider dark:border-dark-divider flex justify-between items-center">
+                <div className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
+                    {song.introDuration != null && <span>Intro: {formatTime(song.introDuration)}</span>}
+                </div>
+                <div className="flex space-x-2">
+                    {song.youtubeUrl && <a href={song.youtubeUrl} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}><YouTubeIcon className="w-5 h-5 text-red-500"/></a>}
+                    {song.spotifyUrl && <a href={song.spotifyUrl} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}><SpotifyIcon className="w-5 h-5 text-green-500"/></a>}
+                </div>
+            </div>
+        )}
+    </div>
   );
 
   return (
     <div className="flex flex-col h-full w-full">
-      <h3 className="text-xl font-bold text-center mb-4 flex-shrink-0">Select a Song</h3>
-      <div className="relative mb-4 flex-shrink-0">
+      <input type="file" ref={importSongsRef} onChange={handleImport} accept=".json" className="hidden" />
+      <h3 className="text-xl font-bold text-center mb-2 flex-shrink-0">Select a Song</h3>
+      <div className="relative mb-2 flex-shrink-0">
         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary"/>
-        <input 
-          type="text" 
-          placeholder="Search for a song..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-full pl-10 pr-4 py-2 text-sm border border-light-divider dark:border-dark-divider"
-        />
+        <input type="text" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-full pl-10 pr-4 py-2 text-sm border border-light-divider dark:border-dark-divider"/>
+      </div>
+      <div className="flex justify-end items-center mb-2 px-1 flex-shrink-0">
+          <div className="flex items-center space-x-1">
+            <button onClick={() => importSongsRef.current?.click()} className="p-2 rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary" aria-label="Import"><UploadIcon className="w-5 h-5" /></button>
+            <button onClick={handleExport} className="p-2 rounded-full hover:bg-light-bg-primary dark:hover:bg-dark-bg-secondary" aria-label="Export"><DownloadIcon className="w-5 h-5" /></button>
+          </div>
       </div>
 
-      <div className="flex-grow overflow-y-auto space-y-4 -mx-2 px-2">
-        {filteredLocalSongs.length > 0 && (
-          <div>
-            <h4 className="font-semibold text-sm mb-2 px-2 text-light-text-secondary dark:text-dark-text-secondary">Your Library</h4>
-            <div className="space-y-2">
-              {filteredLocalSongs.map(song => <SongListItem key={song.id} song={song} isUsed={usedSongIds.has(song.id)} />)}
-            </div>
-          </div>
-        )}
-        {filteredDiscoverSongs.length > 0 && (
-           <div>
-            <h4 className="font-semibold text-sm mb-2 px-2 text-light-text-secondary dark:text-dark-text-secondary">Discover</h4>
-            <div className="space-y-2">
-              {filteredDiscoverSongs.map(song => <SongListItem key={song.id} song={song} isUsed={usedSongIds.has(song.id)} />)}
-            </div>
-          </div>
+      <div className="flex-grow overflow-y-auto space-y-2 -mx-2 px-2">
+        {filteredSongs.length > 0 ? (
+          filteredSongs.map(song => <SongListItem key={song.id} song={song} isUsed={usedSongIds.has(song.id)} onEdit={handleStartEditing} />)
+        ) : (
+          <p className="text-center text-sm text-light-text-secondary dark:text-dark-text-secondary pt-8">No songs match your search.</p>
         )}
       </div>
       
       <div className="pt-4 mt-auto border-t border-light-divider dark:border-dark-divider flex-shrink-0">
         {showAddForm ? (
             <form onSubmit={handleAddSong} className="space-y-2">
-                <p className="text-sm font-semibold text-center">Add New Song</p>
-                <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Title" required className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
+                <p className="text-sm font-semibold text-center">Add to Your Library</p>
+                 <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Title" required className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
                 <input type="text" value={newArtist} onChange={e => setNewArtist(e.target.value)} placeholder="Artist" required className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
-                <input type="number" value={newDuration} onChange={e => setNewDuration(e.target.value)} placeholder="Duration (sec)" required className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
+                <div className="flex space-x-2">
+                    <input type="number" value={newDuration} onChange={e => setNewDuration(e.target.value)} placeholder="Duration (sec)" required className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
+                    <input type="number" value={newIntroDuration} onChange={e => setNewIntroDuration(e.target.value)} placeholder="Intro (sec)" className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
+                </div>
+                <input type="url" value={newYoutubeUrl} onChange={e => setNewYoutubeUrl(e.target.value)} placeholder="YouTube URL" className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
+                <input type="url" value={newSpotifyUrl} onChange={e => setNewSpotifyUrl(e.target.value)} placeholder="Spotify URL" className="w-full bg-light-bg-primary dark:bg-dark-bg-secondary rounded-xl p-2 text-sm"/>
                 <div className="flex space-x-2">
                      <button type="button" onClick={() => setShowAddForm(false)} className="w-full py-2 text-sm rounded-full bg-light-divider dark:bg-dark-divider">Cancel</button>
                      <button type="submit" className="w-full py-2 text-sm rounded-full bg-light-accent text-white">Add</button>
@@ -238,10 +348,11 @@ const SongBrowser: React.FC<{
             </form>
         ) : (
             <button onClick={() => setShowAddForm(true)} className="w-full text-sm text-light-accent dark:text-dark-accent p-2 flex items-center justify-center rounded-xl hover:bg-light-accent/10 dark:hover:bg-dark-accent/10">
-                <PlusIcon className="w-4 h-4 mr-1" /> Can't find a song? Add it to your library.
+                <PlusIcon className="w-4 h-4 mr-1" /> Add song to your library
             </button>
         )}
       </div>
+      {editingSong && <EditSongModal song={editingSong} onSave={handleEditSong} onClose={() => setEditingSong(null)} />}
     </div>
   );
 };
@@ -255,7 +366,7 @@ const MusicSegmentView: React.FC<{
     allSongs: Song[];
     usedSongIds: Set<string|undefined>;
 }> = ({ segment, onSongUpdate, localSongs, setLocalSongs, allSongs, usedSongIds }) => {
-    const [isSelectingSong, setIsSelectingSong] = useState(!segment.songId);
+    const [isSelectingSong, setIsSelectingSong] = React.useState(!segment.songId);
     const song = allSongs.find(s => s.id === segment.songId);
 
     const handleSelect = (selectedSong: Song) => {
@@ -304,7 +415,7 @@ const PlaceholderView: React.FC<{ segment: Segment }> = ({ segment }) => (
 );
 
 const EditSegmentModal: React.FC<{ segment: Segment; isNew: boolean; onClose: () => void; onSave: (segment: Segment) => void;}> = ({ segment, isNew, onClose, onSave }) => {
-    const [editedSegment, setEditedSegment] = useState(segment);
+    const [editedSegment, setEditedSegment] = React.useState(segment);
     const handleFieldChange = <K extends keyof Segment>(field: K, value: Segment[K]) => setEditedSegment(prev => ({...prev, [field]: value}));
     const isCustomType = !PREDEFINED_SEGMENT_TYPES.includes(editedSegment.type);
 
@@ -359,7 +470,7 @@ const EditScheduleModal: React.FC<{
 }> = ({ isOpen, onClose, profile, setProfile, setShowsData, setSelectedShowId, selectedShowId }) => {
     if (!isOpen) return null;
 
-    const [localSchedule, setLocalSchedule] = useState(profile.weeklySchedule);
+    const [localSchedule, setLocalSchedule] = React.useState(profile.weeklySchedule);
 
     const handleUpdate = (id: string, field: 'day' | 'time' | 'show', value: string) => {
         setLocalSchedule(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
@@ -420,30 +531,30 @@ const Showtime: React.FC = () => {
     const [profile, setProfile] = useLocalStorage<ProfileData>('user_profile', initialProfile);
     const [showsData, setShowsData] = useLocalStorage<Record<string, Segment[]>>('shows_data', initialShowsData);
     const [localSongs, setLocalSongs] = useLocalStorage<Song[]>('playlist', []);
-    const [selectedShowId, setSelectedShowId] = useState<string | null>(profile.weeklySchedule[0]?.id || null);
-    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
+    const [selectedShowId, setSelectedShowId] = React.useState<string | null>(profile.weeklySchedule[0]?.id || null);
+    const [activeSegmentId, setActiveSegmentId] = React.useState<string | null>(null);
 
-    const [editingSegment, setEditingSegment] = useState<Segment | null>(null);
-    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-    const [isTeleprompterOpen, setIsTeleprompterOpen] = useState(false);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [editingSegment, setEditingSegment] = React.useState<Segment | null>(null);
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = React.useState(false);
+    const [isTeleprompterOpen, setIsTeleprompterOpen] = React.useState(false);
+    const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
 
-    const [isOnAir, setIsOnAir] = useState(false);
-    const [onAirTimeLeft, setOnAirTimeLeft] = useState(0);
+    const [isOnAir, setIsOnAir] = React.useState(false);
+    const [onAirTimeLeft, setOnAirTimeLeft] = React.useState(0);
 
-    const dragItem = useRef<number | null>(null);
-    const dragOverItem = useRef<number | null>(null);
-    const timerIntervalRef = useRef<number | null>(null);
+    const dragItem = React.useRef<number | null>(null);
+    const dragOverItem = React.useRef<number | null>(null);
+    const timerIntervalRef = React.useRef<number | null>(null);
 
     // FIX: Hoisted `segments` declaration above the `useEffect` hooks that depend on it
     // to resolve a "used before declaration" error.
-    const segments = useMemo(() => {
+    const segments = React.useMemo(() => {
         if (!selectedShowId || !showsData[selectedShowId]) return [];
         return showsData[selectedShowId];
     }, [selectedShowId, showsData]);
 
     // ON AIR Timer Logic
-    useEffect(() => {
+    React.useEffect(() => {
         const activeSegment = segments.find(s => s.id === activeSegmentId);
         if (isOnAir && activeSegment) {
             setOnAirTimeLeft(activeSegment.duration);
@@ -467,7 +578,7 @@ const Showtime: React.FC = () => {
     }, [isOnAir, activeSegmentId, segments]);
 
     // Set initial active segment when a show is selected
-    useEffect(() => {
+    React.useEffect(() => {
         if(selectedShowId && showsData[selectedShowId]?.length > 0){
             setActiveSegmentId(showsData[selectedShowId][0].id);
         } else {
@@ -476,17 +587,17 @@ const Showtime: React.FC = () => {
     }, [selectedShowId, showsData]);
 
     // Open schedule modal on first run if no shows exist
-    useEffect(() => {
+    React.useEffect(() => {
         if (profile.weeklySchedule.length === 0) {
             setIsScheduleModalOpen(true);
         }
     }, [profile.weeklySchedule.length]);
 
-    const selectedShow = useMemo(() => profile.weeklySchedule.find(s => s.id === selectedShowId), [profile.weeklySchedule, selectedShowId]);
-    const activeSegment = useMemo(() => segments.find(s => s.id === activeSegmentId), [segments, activeSegmentId]);
-    const totalRuntime = useMemo(() => segments.reduce((acc, s) => acc + s.duration, 0), [segments]);
-    const activeSegmentIndex = useMemo(() => segments.findIndex(s => s.id === activeSegmentId), [segments, activeSegmentId]);
-    const nextSegment = useMemo(() => (activeSegmentIndex > -1 && activeSegmentIndex < segments.length - 1) ? segments[activeSegmentIndex + 1] : null, [segments, activeSegmentIndex]);
+    const selectedShow = React.useMemo(() => profile.weeklySchedule.find(s => s.id === selectedShowId), [profile.weeklySchedule, selectedShowId]);
+    const activeSegment = React.useMemo(() => segments.find(s => s.id === activeSegmentId), [segments, activeSegmentId]);
+    const totalRuntime = React.useMemo(() => segments.reduce((acc, s) => acc + s.duration, 0), [segments]);
+    const activeSegmentIndex = React.useMemo(() => segments.findIndex(s => s.id === activeSegmentId), [segments, activeSegmentId]);
+    const nextSegment = React.useMemo(() => (activeSegmentIndex > -1 && activeSegmentIndex < segments.length - 1) ? segments[activeSegmentIndex + 1] : null, [segments, activeSegmentIndex]);
 
     const setSegmentsForCurrentShow = (newSegments: Segment[] | ((prev: Segment[]) => Segment[])) => {
         if (!selectedShowId) return;
